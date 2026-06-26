@@ -308,25 +308,28 @@ function loadLS(){
    → 학생 태블릿은 선생님 localStorage 없이 동작!
 ──────────────────────────────────────────────── */
 function encodeState(){
-  // 필요한 핵심 데이터만 추림
   const payload = {
-    c: state.selectedClass,              // 반
-    r: state.round,                      // 라운드
-    s: state.started ? 1 : 0,           // 시작여부
-    p: STOCKS.map(s=>state.prices[s.name]??s.price),  // 주가 배열
-    t: state.teams.map(t=>({            // 팀 (이름+멤버+현금+보유)
+    c: state.selectedClass,
+    r: state.round,
+    s: state.started ? 1 : 0,
+    p: STOCKS.map(s=>state.prices[s.name]??s.price),
+    t: state.teams.map(t=>({
       n: t.name,
       m: t.members,
       ca: state.cash[t.name]??100000,
       h: STOCKS.map(s=>state.holdings[t.name]?.[s.name]??0)
     }))
   };
-  return btoa(encodeURIComponent(JSON.stringify(payload)));
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
 }
 
 function decodeState(encoded){
   try{
-    const payload = JSON.parse(decodeURIComponent(atob(encoded)));
+    const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
     state.selectedClass = payload.c;
     state.round = payload.r;
     state.started = !!payload.s;
@@ -340,7 +343,10 @@ function decodeState(encoded){
       STOCKS.forEach((s,i)=>{ state.holdings[t.n][s.name] = t.h[i]; });
     });
     return true;
-  }catch(e){ return false; }
+  }catch(e){
+    console.error(e);
+    return false;
+  }
 }
 
 /* QR URL 생성 — 팀 이름 + 현재 게임 상태 전체 포함 */
@@ -617,7 +623,15 @@ document.getElementById('btnAssign').onclick=()=>{
   save();
 };
 
-document.getElementById('btnGoLobby').onclick=()=>{ renderLobby(); show('lobby'); };
+document.getElementById('btnGoLobby').onclick=()=>{
+  try{
+    renderLobby();
+    show('lobby');
+  }catch(e){
+    console.error(e);
+    alert('접속 대기 화면 오류: ' + e.message);
+  }
+};
 document.getElementById('btnBackRoster').onclick=()=>show('roster');
 document.getElementById('btnToLobby').onclick=()=>{ renderLobby(); show('lobby'); };
 document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
