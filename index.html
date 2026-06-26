@@ -6,7 +6,6 @@
   <title>구갈중 주식왕</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <style>
     :root{ --bg1:#07111f; --bg2:#0f172a; --bg3:#1e293b; }
     html,body{height:100%;}
@@ -44,6 +43,24 @@
     .join-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;}
     @media(max-width:768px){.mhide{display:none!important}}
   </style>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyA353aGhoZh3SiKRT2diXoN4b2u2UF7TLQ",
+  authDomain: "stockking-71128.firebaseapp.com",
+  databaseURL: "https://stockking-71128-default-rtdb.firebaseio.com",
+  projectId: "stockking-71128",
+  storageBucket: "stockking-71128.firebasestorage.app",
+  messagingSenderId: "15855354465",
+  appId: "1:15855354465:web:a80ec27e0a3465f2f96020"
+};
+window.firebaseApp = initializeApp(firebaseConfig);
+window.db = getDatabase(window.firebaseApp);
+window.firebase = {ref,set,get,onValue,update};
+</script>
+
 </head>
 <body>
 <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
@@ -309,25 +326,25 @@ function loadLS(){
    → 학생 태블릿은 선생님 localStorage 없이 동작!
 ──────────────────────────────────────────────── */
 function encodeState(){
+  // 필요한 핵심 데이터만 추림
   const payload = {
-    c: state.selectedClass,
-    r: state.round,
-    s: state.started ? 1 : 0,
-    p: STOCKS.map(s=>state.prices[s.name]??s.price),
-    t: state.teams.map(t=>({
+    c: state.selectedClass,              // 반
+    r: state.round,                      // 라운드
+    s: state.started ? 1 : 0,           // 시작여부
+    p: STOCKS.map(s=>state.prices[s.name]??s.price),  // 주가 배열
+    t: state.teams.map(t=>({            // 팀 (이름+멤버+현금+보유)
       n: t.name,
       m: t.members,
       ca: state.cash[t.name]??100000,
       h: STOCKS.map(s=>state.holdings[t.name]?.[s.name]??0)
     }))
   };
-  return LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+  return btoa(encodeURIComponent(JSON.stringify(payload)));
 }
 
 function decodeState(encoded){
   try{
-    const json = LZString.decompressFromEncodedURIComponent(encoded);
-    const payload = JSON.parse(json);
+    const payload = JSON.parse(decodeURIComponent(atob(encoded)));
     state.selectedClass = payload.c;
     state.round = payload.r;
     state.started = !!payload.s;
@@ -341,10 +358,7 @@ function decodeState(encoded){
       STOCKS.forEach((s,i)=>{ state.holdings[t.n][s.name] = t.h[i]; });
     });
     return true;
-  }catch(e){
-    console.error(e);
-    return false;
-  }
+  }catch(e){ return false; }
 }
 
 /* QR URL 생성 — 팀 이름 + 현재 게임 상태 전체 포함 */
@@ -621,15 +635,7 @@ document.getElementById('btnAssign').onclick=()=>{
   save();
 };
 
-document.getElementById('btnGoLobby').onclick=()=>{
-  try{
-    renderLobby();
-    show('lobby');
-  }catch(e){
-    console.error(e);
-    alert('접속 대기 화면 오류: ' + e.message);
-  }
-};
+document.getElementById('btnGoLobby').onclick=()=>{ renderLobby(); show('lobby'); };
 document.getElementById('btnBackRoster').onclick=()=>show('roster');
 document.getElementById('btnToLobby').onclick=()=>{ renderLobby(); show('lobby'); };
 document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
