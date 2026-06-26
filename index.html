@@ -7,881 +7,685 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root{
-      --bg1:#07111f;
-      --bg2:#0f172a;
-      --bg3:#1e293b;
-      --accent:#fbbf24;
-      --accent2:#22c55e;
-      --danger:#ef4444;
-      --info:#38bdf8;
-    }
-    html, body { height: 100%; }
+    :root{ --bg1:#07111f; --bg2:#0f172a; --bg3:#1e293b; }
+    html,body{height:100%;}
     body{
       margin:0;
       background:
-        radial-gradient(circle at top left, rgba(59,130,246,.18), transparent 30%),
-        radial-gradient(circle at top right, rgba(168,85,247,.16), transparent 28%),
-        linear-gradient(135deg, var(--bg1), var(--bg2) 45%, var(--bg3));
-      color:#fff;
-      overflow-x:hidden;
+        radial-gradient(circle at top left,rgba(59,130,246,.18),transparent 30%),
+        radial-gradient(circle at top right,rgba(168,85,247,.16),transparent 28%),
+        linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3));
+      color:#fff; overflow-x:hidden;
     }
-    .glass{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 18px 40px rgba(0,0,0,.28);
-    }
-    .glow{
-      box-shadow: 0 0 0 1px rgba(251,191,36,.18), 0 0 30px rgba(251,191,36,.12);
-    }
-    .screen{
-      display:none;
-      animation: fadeIn .28s ease-out;
-    }
-    .screen.active{ display:block; }
-    @keyframes fadeIn{
-      from{ opacity:0; transform: translateY(10px); }
-      to{ opacity:1; transform: translateY(0); }
-    }
-    .btn{
-      transition: transform .15s ease, filter .15s ease, background .15s ease;
-    }
-    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-    .btn:active{ transform: translateY(0px) scale(.99); }
-    .chip{
-      transition: transform .15s ease;
-    }
-    .chip:hover{ transform: scale(1.02); }
-    .mobile-scroll::-webkit-scrollbar{ width:10px; }
-    .mobile-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.22); border-radius:999px; }
-    .mobile-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.06); }
-    @media (max-width: 768px){
-      .mobile-stack{ flex-direction: column !important; }
-      .mobile-full{ width:100% !important; }
-      .mobile-hide{ display:none !important; }
-    }
-
-    /* 팀 카드 — 명단 화면 */
-    .team-card {
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 1.25rem;
-      padding: 1rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: .5rem;
-    }
-
-    /* QR 대기 화면 — 팀 접속 상태 */
-    .qr-team-row {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      padding: .75rem 1rem;
-      border-radius: 1rem;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      transition: border-color .2s;
-    }
-    .qr-team-row.joined {
-      border-color: rgba(34,197,94,.5);
-      background: rgba(34,197,94,.08);
-    }
-    .status-dot {
-      width: .75rem;
-      height: .75rem;
-      border-radius: 50%;
-      background: rgba(255,255,255,.2);
-      flex-shrink: 0;
-    }
-    .status-dot.joined { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-
-    /* QR 이미지 — 작게 */
-    .qr-img-sm { width: 80px; height: 80px; border-radius: .5rem; cursor: pointer; }
-    .qr-img-sm:hover { opacity: .85; }
-
-    /* 접속 대기 화면 팀 그리드 */
-    .join-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: .75rem;
-    }
-    .join-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .75rem;
-      padding: .875rem 1rem;
-      border-radius: 1.25rem;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      transition: all .25s;
-    }
-    .join-card.joined {
-      border-color: rgba(34,197,94,.55);
-      background: rgba(34,197,94,.1);
-    }
-    .join-card-left { display: flex; align-items: center; gap: .75rem; }
-    .join-badge {
-      font-size: .7rem;
-      font-weight: 900;
-      padding: .25rem .6rem;
-      border-radius: 99px;
-      background: rgba(255,255,255,.12);
-      color: #cbd5e1;
-      white-space: nowrap;
-    }
-    .join-badge.joined { background: #22c55e; color: #052e16; }
-    .join-members { font-size: .78rem; color: #94a3b8; line-height: 1.4; }
-
-    /* 사회자 — 팀 현황 패널 */
-    .team-status-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: .5rem;
-      padding: .625rem .875rem;
-      border-radius: .875rem;
-      background: rgba(255,255,255,.05);
-      font-size: .85rem;
-    }
+    .glass{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);box-shadow:0 18px 40px rgba(0,0,0,.28);}
+    .glow{box-shadow:0 0 0 1px rgba(251,191,36,.18),0 0 30px rgba(251,191,36,.12);}
+    .screen{display:none;animation:fadeIn .28s ease-out;}
+    .screen.active{display:block;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .btn{transition:transform .15s,filter .15s,background .15s;}
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.05);}
+    .btn:active{transform:scale(.99);}
+    .chip{transition:transform .15s;}.chip:hover{transform:scale(1.02);}
+    .ms::-webkit-scrollbar{width:8px}.ms::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
+    .team-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:1.25rem;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem;}
+    .join-card{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.875rem 1rem;border-radius:1.25rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:all .25s;}
+    .join-card.joined{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.1);}
+    .join-card-left{display:flex;align-items:center;gap:.75rem;}
+    .join-badge{font-size:.7rem;font-weight:900;padding:.25rem .6rem;border-radius:99px;background:rgba(255,255,255,.12);color:#cbd5e1;white-space:nowrap;}
+    .join-badge.joined{background:#22c55e;color:#052e16;}
+    .join-members{font-size:.78rem;color:#94a3b8;line-height:1.4;}
+    .qr-thumb{width:80px;height:80px;border-radius:.5rem;overflow:hidden;cursor:pointer;flex-shrink:0;background:#fff;}
+    .qr-thumb:hover{opacity:.85;}
+    .dot{width:.75rem;height:.75rem;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;}
+    .dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e;}
+    .row-status{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
+    .row-status.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
+    .join-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;}
+    @media(max-width:768px){.mhide{display:none!important}}
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-    <!-- 헤더 -->
-    <header class="glass rounded-3xl p-5 md:p-6 mb-5 md:mb-8 glow">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400 text-slate-900 font-black text-xs">구갈중</span>
-          <h1 class="text-2xl md:text-4xl font-black tracking-tight">주식왕</h1>
-        </div>
-        <div class="flex flex-wrap gap-2 items-center">
-          <span id="headerClassBadge" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">5반</span>
-          <span id="headerRoundBadge" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">1라운드</span>
-          <button id="btnSaveAll" class="btn px-4 py-2 rounded-2xl bg-emerald-500 text-slate-950 font-black text-sm">저장</button>
-          <button id="btnResetAll" class="btn px-4 py-2 rounded-2xl bg-rose-500 text-white font-black text-sm">초기화</button>
-        </div>
+<div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+
+  <!-- 헤더 -->
+  <header class="glass rounded-3xl p-5 md:p-6 mb-5 md:mb-8 glow">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-900 font-black text-xs">구갈중</span>
+        <h1 class="text-2xl md:text-4xl font-black tracking-tight">주식왕</h1>
       </div>
-    </header>
-
-    <main class="space-y-6">
-
-      <!-- ① 반 선택 -->
-      <section id="screen-select" class="screen active">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <h2 class="text-2xl md:text-3xl font-black mb-1">반을 선택하세요</h2>
-          <p class="text-slate-300 text-sm mb-6">5반 ~ 8반 중 하나를 선택하면 해당 반의 게임으로 들어갑니다.</p>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-            <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-yellow-400 text-slate-950" data-class="5">5반</button>
-            <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="6">6반</button>
-            <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="7">7반</button>
-            <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="8">8반</button>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button id="btnEnterClass" class="btn px-6 py-3 rounded-2xl bg-cyan-400 text-slate-950 font-black">들어가기 →</button>
-            <button id="btnLoadDemo" class="btn px-5 py-3 rounded-2xl bg-white/10 font-bold">예시 명단 불러오기</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ② 명단 입력 & 팀 배정 -->
-      <section id="screen-roster" class="screen">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-black"><span id="rosterClassLabel">5반</span> 명단 입력</h2>
-              <p class="text-slate-300 text-sm mt-1">학생 이름을 한 줄에 하나씩 입력 → 6팀 랜덤 배정</p>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-              <button id="btnBackToSelect" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
-              <button id="btnAssignTeams" class="btn px-5 py-3 rounded-2xl bg-indigo-500 text-white font-black">6팀 랜덤 배정</button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <!-- 입력 -->
-            <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
-              <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단</label>
-              <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예)&#10;김민준&#10;이서연&#10;박지후&#10;최유진"></textarea>
-              <div class="mt-2 text-xs text-slate-400">팀은 항상 6팀으로 고정됩니다.</div>
-            </div>
-
-            <!-- 팀 미리보기 -->
-            <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-black">팀 배정 결과</h3>
-                <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black">6팀 고정</span>
-              </div>
-              <div id="teamPreview" class="grid grid-cols-1 md:grid-cols-2 gap-3 mobile-scroll max-h-[28rem] overflow-auto"></div>
-            </div>
-          </div>
-
-          <!-- 배정 완료 후 → 접속 대기 버튼 -->
-          <div id="rosterNextWrap" class="hidden mt-5 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3">
-            <div>
-              <div class="font-black text-emerald-300">✓ 팀 배정 완료!</div>
-              <div class="text-sm text-slate-300 mt-0.5">이제 학생들이 QR로 접속할 수 있도록 대기 화면을 시작하세요.</div>
-            </div>
-            <button id="btnGoLobby" class="btn px-5 py-3 rounded-2xl bg-emerald-400 text-slate-950 font-black whitespace-nowrap">접속 대기 시작 →</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ③ QR 접속 대기 화면 (새로 추가) -->
-      <section id="screen-lobby" class="screen">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-black">QR 접속 대기</h2>
-              <p class="text-slate-300 text-sm mt-1">각 팀이 QR을 찍고 접속할 때까지 기다리세요. 모든 팀이 접속하면 게임을 시작하세요.</p>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-              <button id="btnBackToRoster" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
-              <button id="btnStartGame" class="btn px-6 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg">▶ 게임 시작</button>
-            </div>
-          </div>
-
-          <!-- 접속 현황 요약 -->
-          <div class="mb-5 p-4 rounded-2xl bg-white/6 border border-white/10 flex items-center gap-4">
-            <div class="text-3xl font-black text-cyan-300"><span id="joinedCount">0</span><span class="text-slate-400 text-xl font-bold"> / 6팀</span></div>
-            <div class="text-slate-300 text-sm">접속 완료<br><span class="text-xs text-slate-400">QR을 찍으면 자동으로 표시됩니다</span></div>
-            <button id="btnSimJoin" class="ml-auto btn px-3 py-2 rounded-xl bg-white/10 text-xs font-bold">접속 시뮬레이션 (테스트)</button>
-          </div>
-
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <!-- QR 그리드 (작게) -->
-            <div>
-              <div class="text-sm font-bold text-slate-300 mb-3">팀별 QR 코드 — 클릭하면 확대</div>
-              <div class="join-grid" id="qrGrid"></div>
-            </div>
-
-            <!-- 접속 현황 -->
-            <div>
-              <div class="text-sm font-bold text-slate-300 mb-3">접속 현황</div>
-              <div id="joinStatusList" class="space-y-2"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ④ 사회자 화면 -->
-      <section id="screen-host" class="screen">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-black">사회자 화면</h2>
-              <p class="text-slate-300 text-sm mt-1">라운드 시작 → 뉴스 공개 → 라운드 종료 → 다음날 주가 확인 순서로 진행하세요.</p>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-              <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">라운드 시작</button>
-              <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">라운드 종료</button>
-              <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">다음날 주가 확인</button>
-              <button id="btnBackToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기화면</button>
-            </div>
-          </div>
-
-          <!-- 상태 바 -->
-          <div class="grid grid-cols-3 gap-3 mb-5">
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">현재 반</div>
-              <div id="hostClass" class="text-2xl font-black text-yellow-300">5반</div>
-            </div>
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">현재 라운드</div>
-              <div id="hostRound" class="text-2xl font-black">1라운드</div>
-            </div>
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">상태</div>
-              <div id="hostStatus" class="text-2xl font-black text-emerald-300">대기</div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <!-- 뉴스 -->
-            <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xl font-black">이번 라운드 뉴스</h3>
-                <button id="btnShuffleNews" class="btn px-3 py-2 rounded-xl bg-white/10 text-sm font-bold">새로 뽑기</button>
-              </div>
-              <div id="newsArea" class="space-y-3 mobile-scroll max-h-[28rem] overflow-auto"></div>
-            </div>
-
-            <!-- 주식 차트 -->
-            <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xl font-black">주식 현황</h3>
-                <span class="text-xs text-slate-400">라운드 종료 후 변동 반영</span>
-              </div>
-              <div id="chartArea" class="space-y-2 mobile-scroll max-h-[28rem] overflow-auto"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ⑤ 학생 태블릿 화면 -->
-      <section id="screen-student" class="screen">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-black">학생 태블릿 화면</h2>
-              <p class="text-slate-300 text-sm mt-1">팀원들과 상의 후 매수/매도를 결정하세요.</p>
-            </div>
-            <button id="btnStudentRefresh" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">새로고침</button>
-          </div>
-
-          <div class="grid grid-cols-3 gap-3 mb-5">
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">내 팀</div>
-              <div id="studentTeam" class="text-2xl font-black text-cyan-300">1팀</div>
-            </div>
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">보유 현금</div>
-              <div id="studentCash" class="text-2xl font-black">100,000원</div>
-            </div>
-            <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-              <div class="text-xs text-slate-400 mb-1">총 평가금</div>
-              <div id="studentAsset" class="text-2xl font-black text-emerald-300">100,000원</div>
-            </div>
-          </div>
-
-          <div id="tradeArea" class="space-y-3 mobile-scroll max-h-[36rem] overflow-auto"></div>
-        </div>
-      </section>
-
-      <!-- ⑥ 라운드 결과 -->
-      <section id="screen-result" class="screen">
-        <div class="glass rounded-3xl p-5 md:p-6 lg:p-8">
-          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-black">라운드 결과</h2>
-              <p class="text-slate-300 text-sm mt-1">다음날 주가 변동과 팀별 평가금을 확인합니다.</p>
-            </div>
-            <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 사회자 화면</button>
-          </div>
-          <div id="resultArea" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- QR 확대 모달 -->
-  <div id="qrModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-3xl p-5 max-w-xs w-full text-center">
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-slate-900 font-black text-base" id="qrModalTeamLabel">1팀 QR</div>
-        <button id="btnCloseQrModal" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-sm">닫기</button>
+      <div class="flex flex-wrap gap-2 items-center">
+        <span id="hClass" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">5반</span>
+        <span id="hRound" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">1라운드</span>
+        <button id="btnSave" class="btn px-4 py-2 rounded-2xl bg-emerald-500 text-slate-950 font-black text-sm">저장</button>
+        <button id="btnReset" class="btn px-4 py-2 rounded-2xl bg-rose-500 text-white font-black text-sm">초기화</button>
       </div>
-      <div id="qrModalCanvas" class="flex justify-center"></div>
-      <div id="qrModalUrl" class="mt-3 font-mono text-xs text-slate-500 break-all"></div>
     </div>
-  </div>
+  </header>
 
-  <script>
-    /* ───────────────── 데이터 ───────────────── */
-    const STOCKS = [
-      { name: '구갈반도체', sector: '반도체', price: 12000 },
-      { name: '심성전기', sector: '전기', price: 8400 },
-      { name: '한화에너지', sector: '에너지', price: 15600 },
-      { name: '에잇뱅크', sector: '은행', price: 9800 },
-      { name: '한교동게임즈', sector: '게임', price: 11200 },
-      { name: '슬램덩크엔터', sector: '엔터', price: 7600 },
-      { name: '심재권로켓랩', sector: '우주항공', price: 14300 },
-      { name: 'SIMAI솔루션', sector: 'AI', price: 18800 },
-      { name: '용인스포츠', sector: '스포츠', price: 6900 },
-      { name: '기흥바이오', sector: '바이오', price: 13100 }
-    ];
+  <main class="space-y-6">
 
-    const NEWS_POOL = [
-      { stock:'한교동게임즈', title:'미국 투자자들과 협업 결정', effect: 0.18, text:'미국 투자자들이 한교동게임즈와 협업을 결정했습니다.' },
-      { stock:'구갈반도체', title:'구갈 공장 증설 발표', effect: 0.15, text:'구갈반도체가 신규 공장 증설 계획을 발표했습니다.' },
-      { stock:'구갈반도체', title:'태풍으로 공장 일부 마비', effect: -0.14, text:'구갈에 태풍이 불어 공장 일부가 마비되었습니다.' },
-      { stock:'한화에너지', title:'신재생 프로젝트 수주', effect: 0.14, text:'한화에너지가 대형 신재생 프로젝트를 수주했습니다.' },
-      { stock:'심성전기', title:'전력 수요 급증', effect: 0.11, text:'전력 수요가 급증하며 심성전기 실적 기대가 커졌습니다.' },
-      { stock:'에잇뱅크', title:'금리 인하 기대', effect: 0.09, text:'금리 인하 기대감으로 은행주가 강세를 보이고 있습니다.' },
-      { stock:'슬램덩크엔터', title:'신인 아이돌 흥행', effect: 0.16, text:'슬램덩크엔터 소속 신인 아이돌이 큰 인기를 얻고 있습니다.' },
-      { stock:'심재권로켓랩', title:'위성 발사 성공', effect: 0.2, text:'심재권로켓랩의 위성 발사가 성공적으로 마무리되었습니다.' },
-      { stock:'SIMAI솔루션', title:'AI 계약 체결', effect: 0.17, text:'SIMAI솔루션이 대형 기업과 AI 도입 계약을 체결했습니다.' },
-      { stock:'기흥바이오', title:'신약 임상 결과 발표', effect: 0.19, text:'기흥바이오의 신약 임상 결과가 긍정적으로 나왔습니다.' },
-      { stock:'용인스포츠', title:'국제 대회 후원 계약', effect: 0.1, text:'용인스포츠가 국제 대회 후원 계약을 따냈습니다.' }
-    ];
+    <!-- ① 반 선택 -->
+    <section id="screen-select" class="screen active">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <h2 class="text-2xl md:text-3xl font-black mb-1">반을 선택하세요</h2>
+        <p class="text-slate-300 text-sm mb-6">5~8반 중 하나를 선택하면 해당 반 게임으로 들어갑니다.</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-yellow-400 text-slate-950" data-class="5">5반</button>
+          <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="6">6반</button>
+          <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="7">7반</button>
+          <button class="classBtn btn rounded-2xl py-5 text-2xl font-black bg-white/10" data-class="8">8반</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnEnterClass" class="btn px-6 py-3 rounded-2xl bg-cyan-400 text-slate-950 font-black">들어가기 →</button>
+          <button id="btnLoadDemo" class="btn px-5 py-3 rounded-2xl bg-white/10 font-bold">예시 명단</button>
+        </div>
+      </div>
+    </section>
 
-    /* ───────────────── 상태 ───────────────── */
-    const state = {
-      selectedClass: '5',
-      teams: [],
-      round: 1,
-      started: false,
-      currentNews: [],
-      prices: Object.fromEntries(STOCKS.map(s => [s.name, s.price])),
-      cash: {},
-      holdings: {},
-      joined: {}   // 팀명 → boolean (QR 접속 여부)
-    };
-
-    /* ───────────────── 저장/불러오기 ───────────────── */
-    function storageKey() { return `gugal_stock_king_${state.selectedClass}`; }
-
-    function save() {
-      localStorage.setItem(storageKey(), JSON.stringify(state));
-    }
-
-    function load() {
-      const raw = localStorage.getItem(storageKey());
-      if (raw) Object.assign(state, JSON.parse(raw));
-    }
-
-    /* ───────────────── 유틸 ───────────────── */
-    function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
-
-    function assignTeams(students) {
-      const teams = Array.from({ length: 6 }, (_, i) => ({ name: `${i + 1}팀`, members: [] }));
-      shuffle(students).forEach((s, i) => teams[i % 6].members.push(s));
-      return teams;
-    }
-
-    function initEconomy() {
-      state.cash = {};
-      state.holdings = {};
-      state.joined = {};
-      state.teams.forEach(team => {
-        state.cash[team.name] = 100000;
-        state.holdings[team.name] = {};
-        state.joined[team.name] = false;
-        STOCKS.forEach(s => state.holdings[team.name][s.name] = 0);
-      });
-    }
-
-    function teamUrl(teamName) {
-      return `${location.origin}${location.pathname}#class=${state.selectedClass}&team=${encodeURIComponent(teamName)}`;
-    }
-
-    function teamAsset(teamName) {
-      const cash = state.cash[teamName] ?? 100000;
-      const stockValue = Object.entries(state.holdings[teamName] || {})
-        .reduce((sum, [name, qty]) => sum + qty * (state.prices[name] || 0), 0);
-      return { cash, stockValue, total: cash + stockValue };
-    }
-
-    function demoStudents() {
-      return ['김민준','이서연','박지후','최유진','정하늘','오세훈','한지우','윤서아','강도윤','임수빈','조현우','문가온','백시윤','홍예린','장서준','노아린','서도현','배하린','신우진','허지민','곽태양','이도윤','김서준','박하린'];
-    }
-
-    /* ───────────────── 화면 전환 ───────────────── */
-    const SCREENS = ['select','roster','lobby','host','student','result'];
-    function showScreen(id) {
-      SCREENS.forEach(n => document.getElementById(`screen-${n}`).classList.toggle('active', n === id));
-    }
-
-    /* ───────────────── 헤더 업데이트 ───────────────── */
-    function updateHeader() {
-      document.getElementById('headerClassBadge').textContent = `${state.selectedClass}반`;
-      document.getElementById('headerRoundBadge').textContent = `${state.round}라운드`;
-    }
-
-    /* ───────────────── 팀 미리보기 ───────────────── */
-    function renderTeamPreview() {
-      const box = document.getElementById('teamPreview');
-      if (!state.teams.length) {
-        box.innerHTML = `<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">명단을 입력하고 배정하세요.</div>`;
-        return;
-      }
-      box.innerHTML = state.teams.map(team => `
-        <div class="team-card">
-          <div class="flex items-center justify-between">
-            <span class="font-black text-lg">${team.name}</span>
-            <span class="text-xs px-2 py-1 rounded-full bg-yellow-400 text-slate-950 font-black">${team.members.length}명</span>
+    <!-- ② 명단 입력 -->
+    <section id="screen-roster" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-black"><span id="rosterLabel">5반</span> 명단 입력</h2>
+            <p class="text-slate-300 text-sm mt-1">이름을 한 줄에 하나씩 입력 → 6팀 랜덤 배정</p>
           </div>
-          <div class="flex flex-wrap gap-1.5">
-            ${team.members.map(m => `<span class="chip px-2.5 py-1 rounded-full bg-white/10 text-xs">${m}</span>`).join('')}
+          <div class="flex gap-2 flex-wrap">
+            <button id="btnBackSelect" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
+            <button id="btnAssign" class="btn px-5 py-3 rounded-2xl bg-indigo-500 text-white font-black">6팀 랜덤 배정</button>
           </div>
         </div>
-      `).join('');
-    }
-
-    /* ───────────────── QRCode 생성 헬퍼 ───────────────── */
-    // container: DOM element, url: string, size: number
-    function makeQR(container, url, size) {
-      container.innerHTML = '';
-      new QRCode(container, {
-        text: url,
-        width: size,
-        height: size,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    }
-
-    /* ───────────────── QR 대기 화면 ───────────────── */
-    function renderLobby() {
-      const joinedCount = Object.values(state.joined).filter(Boolean).length;
-      document.getElementById('joinedCount').textContent = joinedCount;
-
-      // QR 카드 그리드
-      const grid = document.getElementById('qrGrid');
-      grid.innerHTML = '';
-      state.teams.forEach(team => {
-        const url = teamUrl(team.name);
-        const isJoined = state.joined[team.name];
-
-        const card = document.createElement('div');
-        card.className = `join-card${isJoined ? ' joined' : ''}`;
-        card.innerHTML = `
-          <div class="join-card-left">
-            <div class="qr-img-sm qrThumb" style="background:#fff;border-radius:.5rem;overflow:hidden;cursor:pointer;flex-shrink:0;"></div>
-            <div>
-              <div class="font-black">${team.name}</div>
-              <div class="join-members">${team.members.join(', ')}</div>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+            <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단</label>
+            <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예)&#10;김민준&#10;이서연&#10;박지후"></textarea>
           </div>
-          <span class="join-badge${isJoined ? ' joined' : ''}">${isJoined ? '✓ 접속됨' : '대기중'}</span>
-        `;
-        grid.appendChild(card);
-
-        // QR 작게 (80px)
-        const thumb = card.querySelector('.qrThumb');
-        makeQR(thumb, url, 80);
-
-        // 클릭 → 확대 모달
-        thumb.onclick = () => {
-          document.getElementById('qrModalTeamLabel').textContent = `${team.name} QR`;
-          document.getElementById('qrModalUrl').textContent = url;
-          makeQR(document.getElementById('qrModalCanvas'), url, 260);
-          document.getElementById('qrModal').classList.remove('hidden');
-          document.getElementById('qrModal').classList.add('flex');
-        };
-      });
-
-      // 접속 현황 리스트
-      const statusList = document.getElementById('joinStatusList');
-      statusList.innerHTML = state.teams.map(team => {
-        const isJoined = state.joined[team.name];
-        return `
-          <div class="qr-team-row ${isJoined ? 'joined' : ''}">
-            <div class="status-dot ${isJoined ? 'joined' : ''}"></div>
-            <div class="flex-1">
-              <span class="font-bold">${team.name}</span>
-              <span class="text-xs text-slate-400 ml-2">${team.members.join(', ')}</span>
+          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-black">팀 배정 결과</h3>
+              <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black">6팀 고정</span>
             </div>
-            <span class="text-sm ${isJoined ? 'text-emerald-300 font-bold' : 'text-slate-500'}">${isJoined ? '접속됨' : '미접속'}</span>
+            <div id="teamPreview" class="grid grid-cols-1 md:grid-cols-2 gap-3 ms max-h-96 overflow-auto"></div>
           </div>
-        `;
-      }).join('');
-    }
-
-    /* ───────────────── 사회자 화면 ───────────────── */
-    function renderHost() {
-      document.getElementById('hostClass').textContent = `${state.selectedClass}반`;
-      document.getElementById('hostRound').textContent = `${state.round}라운드`;
-      document.getElementById('hostStatus').textContent = state.started ? '진행중' : '대기';
-
-      // 뉴스
-      const newsBox = document.getElementById('newsArea');
-      newsBox.innerHTML = state.currentNews.length
-        ? state.currentNews.map(n => `
-            <div class="p-4 rounded-2xl bg-black/20 border border-white/10">
-              <div class="font-black">${n.title}</div>
-              <div class="text-sm text-slate-300 mt-1">${n.text}</div>
-              <div class="text-xs text-slate-500 mt-2">관련 종목: ${n.stock}</div>
-            </div>
-          `).join('')
-        : `<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 뉴스가 공개됩니다.</div>`;
-
-      // 차트
-      const chartBox = document.getElementById('chartArea');
-      chartBox.innerHTML = STOCKS.map(s => {
-        const p = state.prices[s.name] ?? s.price;
-        const diff = ((p - s.price) / s.price) * 100;
-        return `
-          <div class="p-3 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between">
-            <div>
-              <span class="font-black">${s.name}</span>
-              <span class="text-xs text-slate-500 ml-2">${s.sector}</span>
-            </div>
-            <div class="text-right">
-              <div class="font-black">${Math.round(p).toLocaleString()}원</div>
-              <div class="text-xs ${diff >= 0 ? 'text-emerald-300' : 'text-rose-300'}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%</div>
-            </div>
+        </div>
+        <div id="rosterNext" class="hidden mt-5 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3">
+          <div>
+            <div class="font-black text-emerald-300">✓ 팀 배정 완료!</div>
+            <div class="text-sm text-slate-300 mt-0.5">학생들이 QR로 접속할 수 있도록 대기 화면을 시작하세요.</div>
           </div>
-        `;
-      }).join('');
-      updateHeader();
-    }
+          <button id="btnGoLobby" class="btn px-5 py-3 rounded-2xl bg-emerald-400 text-slate-950 font-black whitespace-nowrap">접속 대기 시작 →</button>
+        </div>
+      </div>
+    </section>
 
-    /* ───────────────── 학생 화면 ───────────────── */
-    function currentTeamName() {
-      const hash = new URLSearchParams(location.hash.replace('#', ''));
-      const t = hash.get('team');
-      return t ? decodeURIComponent(t) : (state.teams[0]?.name || '1팀');
-    }
-
-    function renderStudent() {
-      const teamName = currentTeamName();
-      document.getElementById('studentTeam').textContent = teamName;
-      document.getElementById('studentCash').textContent = `${(state.cash[teamName] ?? 100000).toLocaleString()}원`;
-      document.getElementById('studentAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
-
-      const area = document.getElementById('tradeArea');
-      if (!state.started) {
-        area.innerHTML = `<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">라운드 시작 전에는 매수/매도가 불가능합니다. 선생님이 라운드를 시작할 때까지 기다려주세요.</div>`;
-        return;
-      }
-      area.innerHTML = STOCKS.map(s => {
-        const price = Math.round(state.prices[s.name] || s.price);
-        const qty = state.holdings[teamName]?.[s.name] || 0;
-        return `
-          <div class="p-4 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <div class="font-black">${s.name} <span class="text-xs text-slate-400 font-normal">${s.sector}</span></div>
-              <div class="text-sm text-slate-300 mt-0.5">현재가 ${price.toLocaleString()}원 · 보유 ${qty}주</div>
-            </div>
-            <div class="flex gap-2 flex-shrink-0">
-              <button class="tradeBtn btn px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 font-black text-sm" data-action="buy" data-stock="${s.name}">매수</button>
-              <button class="tradeBtn btn px-3 py-2 rounded-xl bg-rose-400 text-white font-black text-sm" data-action="sell" data-stock="${s.name}">매도</button>
-            </div>
+    <!-- ③ QR 접속 대기 -->
+    <section id="screen-lobby" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-black">QR 접속 대기</h2>
+            <p class="text-slate-300 text-sm mt-1">각 팀이 QR을 찍고 접속하면 초록색으로 바뀝니다. 모두 접속하면 게임 시작!</p>
           </div>
-        `;
-      }).join('');
+          <div class="flex gap-2 flex-wrap">
+            <button id="btnBackRoster" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
+            <button id="btnStartGame" class="btn px-6 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg">▶ 게임 시작</button>
+          </div>
+        </div>
+        <!-- 접속 현황 요약 -->
+        <div class="mb-5 p-4 rounded-2xl bg-white/6 border border-white/10 flex items-center gap-4 flex-wrap">
+          <div class="text-3xl font-black text-cyan-300"><span id="joinedCount">0</span><span class="text-slate-400 text-xl font-bold"> / 6팀</span></div>
+          <div class="text-slate-300 text-sm">접속 완료 <span class="block text-xs text-slate-400">QR 찍으면 자동으로 초록색으로 바뀝니다</span></div>
+          <button id="btnRefreshLobby" class="ml-auto btn px-3 py-2 rounded-xl bg-white/10 text-xs font-bold">🔄 접속 현황 갱신</button>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div>
+            <div class="text-sm font-bold text-slate-300 mb-3">팀별 QR — 클릭하면 크게 보기</div>
+            <div class="join-grid" id="qrGrid"></div>
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-300 mb-3">접속 현황</div>
+            <div id="joinList" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      document.querySelectorAll('.tradeBtn').forEach(btn => {
-        btn.onclick = () => {
-          if (!state.started) return alert('라운드가 시작되지 않았습니다.');
-          const stock = btn.dataset.stock;
-          const action = btn.dataset.action;
-          const team = currentTeamName();
-          const price = Math.round(state.prices[stock] || 0);
-          if (action === 'buy') {
-            if ((state.cash[team] || 0) < price) return alert('현금이 부족합니다.');
-            state.cash[team] -= price;
-            state.holdings[team][stock] = (state.holdings[team][stock] || 0) + 1;
-          } else {
-            if ((state.holdings[team][stock] || 0) <= 0) return alert('보유 주식이 없습니다.');
-            state.holdings[team][stock] -= 1;
-            state.cash[team] += price;
-          }
-          save();
-          renderStudent();
-          renderResult();
-        };
-      });
-    }
-
-    /* ───────────────── 결과 화면 ───────────────── */
-    function renderResult() {
-      const box = document.getElementById('resultArea');
-      if (!state.teams.length) {
-        box.innerHTML = `<div class="p-4 rounded-2xl bg-black/20 text-slate-400">결과가 없습니다.</div>`;
-        return;
-      }
-      const sorted = [...state.teams].sort((a, b) => teamAsset(b.name).total - teamAsset(a.name).total);
-      box.innerHTML = sorted.map((team, idx) => {
-        const asset = teamAsset(team.name);
-        const rankColors = ['text-yellow-300','text-slate-300','text-amber-600'];
-        const rankLabel = ['🥇 1위','🥈 2위','🥉 3위','4위','5위','6위'];
-        return `
-          <div class="p-4 rounded-3xl bg-black/20 border border-white/10">
+    <!-- ④ 사회자 화면 -->
+    <section id="screen-host" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-black">사회자 화면</h2>
+            <p class="text-slate-300 text-sm mt-1">라운드 시작 → 뉴스 공개 → 라운드 종료 → 다음날 주가 확인</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">라운드 시작</button>
+            <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">라운드 종료</button>
+            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">다음날 주가 확인</button>
+            <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기화면</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">현재 반</div>
+            <div id="hostClass" class="text-2xl font-black text-yellow-300">5반</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">라운드</div>
+            <div id="hostRound" class="text-2xl font-black">1라운드</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">상태</div>
+            <div id="hostStatus" class="text-2xl font-black text-emerald-300">대기</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-3">
-              <div class="font-black text-xl">${team.name}</div>
-              <div class="font-black ${rankColors[idx] || 'text-slate-400'} text-sm">${rankLabel[idx]}</div>
+              <h3 class="text-xl font-black">이번 라운드 뉴스</h3>
+              <button id="btnShuffleNews" class="btn px-3 py-2 rounded-xl bg-white/10 text-sm font-bold">새로 뽑기</button>
             </div>
-            <div class="space-y-1 text-sm text-slate-300">
-              <div>현금: <span class="font-bold text-white">${asset.cash.toLocaleString()}원</span></div>
-              <div>주식: <span class="font-bold text-white">${Object.entries(state.holdings[team.name] || {}).filter(([,q]) => q > 0).map(([n,q]) => `${n} ${q}주`).join(', ') || '없음'}</span></div>
-            </div>
-            <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-              <span class="text-slate-400 text-sm">총 평가금</span>
-              <span class="font-black text-cyan-300 text-lg">${asset.total.toLocaleString()}원</span>
-            </div>
+            <div id="newsArea" class="space-y-3 ms max-h-96 overflow-auto"></div>
           </div>
-        `;
-      }).join('');
-    }
+          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xl font-black">주식 현황</h3>
+              <span class="text-xs text-slate-400">라운드 종료 후 반영</span>
+            </div>
+            <div id="chartArea" class="space-y-2 ms max-h-96 overflow-auto"></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    /* ───────────────── 뉴스 뽑기 ───────────────── */
-    function randomNews() {
-      state.currentNews = shuffle(NEWS_POOL).slice(0, 4);
-      renderHost();
-      save();
-    }
+    <!-- ⑤ 학생 태블릿 화면 -->
+    <section id="screen-student" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-black">학생 화면</h2>
+            <p class="text-slate-300 text-sm mt-1">팀원들과 상의 후 매수/매도를 결정하세요.</p>
+          </div>
+          <button id="btnStuRefresh" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">🔄 새로고침</button>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">내 팀</div>
+            <div id="stuTeam" class="text-2xl font-black text-cyan-300">1팀</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">보유 현금</div>
+            <div id="stuCash" class="text-2xl font-black">100,000원</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+            <div class="text-xs text-slate-400 mb-1">총 평가금</div>
+            <div id="stuAsset" class="text-2xl font-black text-emerald-300">100,000원</div>
+          </div>
+        </div>
+        <div id="tradeArea" class="space-y-3 ms max-h-[36rem] overflow-auto"></div>
+      </div>
+    </section>
 
-    /* ───────────────── 다음날 주가 ───────────────── */
-    function applyDayChange() {
-      state.currentNews.forEach(n => {
-        const base = STOCKS.find(s => s.name === n.stock);
-        if (!base) return;
-        const current = state.prices[n.stock] || base.price;
-        state.prices[n.stock] = Math.max(1000, Math.round(current * (1 + n.effect + (Math.random() * 0.04 - 0.02))));
-      });
-      STOCKS.forEach(s => {
-        if (!state.currentNews.some(n => n.stock === s.name)) {
-          const current = state.prices[s.name] || s.price;
-          state.prices[s.name] = Math.max(1000, Math.round(current * (1 + (Math.random() * 0.08 - 0.04))));
-        }
-      });
-      state.round += 1;
-      renderHost();
-      renderStudent();
-      renderResult();
-      save();
-    }
+    <!-- ⑥ 결과 화면 -->
+    <section id="screen-result" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-black">라운드 결과</h2>
+            <p class="text-slate-300 text-sm mt-1">다음날 주가 변동과 팀별 평가금을 확인합니다.</p>
+          </div>
+          <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 사회자 화면</button>
+        </div>
+        <div id="resultArea" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
 
-    /* ───────────────── 이벤트 연결 ───────────────── */
+  </main>
+</div>
 
-    // 반 선택
-    document.querySelectorAll('.classBtn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.classBtn').forEach(b => {
-          b.classList.remove('bg-yellow-400', 'text-slate-950');
-          b.classList.add('bg-white/10');
-        });
-        btn.classList.add('bg-yellow-400', 'text-slate-950');
-        btn.classList.remove('bg-white/10');
-        state.selectedClass = btn.dataset.class;
-        load();
-        updateHeader();
-        renderTeamPreview();
-        renderLobby();
-        renderHost();
-        renderStudent();
-        renderResult();
-      });
+<!-- QR 모달 -->
+<div id="qrModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl p-5 max-w-xs w-full text-center">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-slate-900 font-black text-base" id="qrModalLabel">1팀 QR</div>
+      <button id="btnCloseModal" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-sm">닫기</button>
+    </div>
+    <div id="qrModalCanvas" class="flex justify-center"></div>
+    <div id="qrModalUrl" class="mt-3 font-mono text-xs text-slate-500 break-all"></div>
+  </div>
+</div>
+
+<script>
+/* ─── 상수 ─── */
+const STOCKS = [
+  {name:'구갈반도체',sector:'반도체',price:12000},
+  {name:'심성전기',sector:'전기',price:8400},
+  {name:'한화에너지',sector:'에너지',price:15600},
+  {name:'에잇뱅크',sector:'은행',price:9800},
+  {name:'한교동게임즈',sector:'게임',price:11200},
+  {name:'슬램덩크엔터',sector:'엔터',price:7600},
+  {name:'심재권로켓랩',sector:'우주항공',price:14300},
+  {name:'SIMAI솔루션',sector:'AI',price:18800},
+  {name:'용인스포츠',sector:'스포츠',price:6900},
+  {name:'기흥바이오',sector:'바이오',price:13100}
+];
+const NEWS_POOL = [
+  {stock:'한교동게임즈',title:'미국 투자자들과 협업 결정',effect:0.18,text:'미국 투자자들이 한교동게임즈와 협업을 결정했습니다.'},
+  {stock:'구갈반도체',title:'구갈 공장 증설 발표',effect:0.15,text:'구갈반도체가 신규 공장 증설 계획을 발표했습니다.'},
+  {stock:'구갈반도체',title:'태풍으로 공장 일부 마비',effect:-0.14,text:'구갈에 태풍이 불어 공장 일부가 마비되었습니다.'},
+  {stock:'한화에너지',title:'신재생 프로젝트 수주',effect:0.14,text:'한화에너지가 대형 신재생 프로젝트를 수주했습니다.'},
+  {stock:'심성전기',title:'전력 수요 급증',effect:0.11,text:'전력 수요가 급증하며 심성전기 실적 기대가 커졌습니다.'},
+  {stock:'에잇뱅크',title:'금리 인하 기대',effect:0.09,text:'금리 인하 기대감으로 은행주가 강세를 보이고 있습니다.'},
+  {stock:'슬램덩크엔터',title:'신인 아이돌 흥행',effect:0.16,text:'슬램덩크엔터 소속 신인 아이돌이 큰 인기를 얻고 있습니다.'},
+  {stock:'심재권로켓랩',title:'위성 발사 성공',effect:0.2,text:'심재권로켓랩의 위성 발사가 성공적으로 마무리되었습니다.'},
+  {stock:'SIMAI솔루션',title:'AI 계약 체결',effect:0.17,text:'SIMAI솔루션이 대형 기업과 AI 도입 계약을 체결했습니다.'},
+  {stock:'기흥바이오',title:'신약 임상 결과 발표',effect:0.19,text:'기흥바이오의 신약 임상 결과가 긍정적으로 나왔습니다.'},
+  {stock:'용인스포츠',title:'국제 대회 후원 계약',effect:0.1,text:'용인스포츠가 국제 대회 후원 계약을 따냈습니다.'}
+];
+
+/* ─── 상태 ─── */
+const state = {
+  selectedClass:'5', teams:[], round:1, started:false,
+  currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
+};
+function resetPrices(){ state.prices = Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
+resetPrices();
+
+/* ─── localStorage (선생님 컴퓨터 전용) ─── */
+const lsKey = ()=>`gugal_v3_${state.selectedClass}`;
+function save(){
+  localStorage.setItem(lsKey(), JSON.stringify(state));
+}
+function loadLS(){
+  const raw = localStorage.getItem(lsKey());
+  if(raw) Object.assign(state, JSON.parse(raw));
+}
+
+/* ────────────────────────────────────────────────
+   핵심: 게임 상태를 URL 해시에 압축해서 담기
+   학생 QR에는 이 압축 데이터가 통째로 들어감
+   → 학생 태블릿은 선생님 localStorage 없이 동작!
+──────────────────────────────────────────────── */
+function encodeState(){
+  // 필요한 핵심 데이터만 추림
+  const payload = {
+    c: state.selectedClass,              // 반
+    r: state.round,                      // 라운드
+    s: state.started ? 1 : 0,           // 시작여부
+    p: STOCKS.map(s=>state.prices[s.name]??s.price),  // 주가 배열
+    t: state.teams.map(t=>({            // 팀 (이름+멤버+현금+보유)
+      n: t.name,
+      m: t.members,
+      ca: state.cash[t.name]??100000,
+      h: STOCKS.map(s=>state.holdings[t.name]?.[s.name]??0)
+    }))
+  };
+  return btoa(encodeURIComponent(JSON.stringify(payload)));
+}
+
+function decodeState(encoded){
+  try{
+    const payload = JSON.parse(decodeURIComponent(atob(encoded)));
+    state.selectedClass = payload.c;
+    state.round = payload.r;
+    state.started = !!payload.s;
+    STOCKS.forEach((s,i)=>{ state.prices[s.name] = payload.p[i]; });
+    state.teams = payload.t.map(t=>({name:t.n, members:t.m}));
+    state.cash = {};
+    state.holdings = {};
+    payload.t.forEach(t=>{
+      state.cash[t.n] = t.ca;
+      state.holdings[t.n] = {};
+      STOCKS.forEach((s,i)=>{ state.holdings[t.n][s.name] = t.h[i]; });
     });
+    return true;
+  }catch(e){ return false; }
+}
 
-    document.getElementById('btnEnterClass').onclick = () => {
-      showScreen('roster');
-      document.getElementById('rosterClassLabel').textContent = `${state.selectedClass}반`;
-      renderTeamPreview();
+/* QR URL 생성 — 팀 이름 + 현재 게임 상태 전체 포함 */
+function teamUrl(teamName){
+  const encoded = encodeState();
+  return `${location.origin}${location.pathname}#t=${encodeURIComponent(teamName)}&d=${encoded}`;
+}
+
+/* ─── 유틸 ─── */
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
+function assignTeams(students){
+  const teams = Array.from({length:6},(_,i)=>({name:`${i+1}팀`,members:[]}));
+  shuffle(students).forEach((s,i)=>teams[i%6].members.push(s));
+  return teams;
+}
+function initEconomy(){
+  state.cash={}; state.holdings={}; state.joined={};
+  state.teams.forEach(t=>{
+    state.cash[t.name]=100000;
+    state.holdings[t.name]={};
+    state.joined[t.name]=false;
+    STOCKS.forEach(s=>state.holdings[t.name][s.name]=0);
+  });
+}
+function teamAsset(name){
+  const cash = state.cash[name]??100000;
+  const sv = Object.entries(state.holdings[name]||{})
+    .reduce((sum,[n,q])=>sum+q*(state.prices[n]||0),0);
+  return {cash, sv, total:cash+sv};
+}
+function demoStudents(){
+  return ['김민준','이서연','박지후','최유진','정하늘','오세훈','한지우','윤서아','강도윤','임수빈','조현우','문가온','백시윤','홍예린','장서준','노아린','서도현','배하린','신우진','허지민','곽태양','이도윤','김서준','박하린'];
+}
+
+/* ─── 화면 전환 ─── */
+const SCREENS = ['select','roster','lobby','host','student','result'];
+function show(id){ SCREENS.forEach(n=>document.getElementById(`screen-${n}`).classList.toggle('active',n===id)); }
+
+/* ─── 헤더 ─── */
+function updateHeader(){
+  document.getElementById('hClass').textContent = `${state.selectedClass}반`;
+  document.getElementById('hRound').textContent = `${state.round}라운드`;
+}
+
+/* ─── QR 생성 ─── */
+function makeQR(el, url, size){
+  el.innerHTML='';
+  new QRCode(el,{text:url,width:size,height:size,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+}
+
+/* ─── 팀 미리보기 ─── */
+function renderTeamPreview(){
+  const box = document.getElementById('teamPreview');
+  if(!state.teams.length){
+    box.innerHTML=`<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">명단을 입력하고 배정하세요.</div>`;
+    return;
+  }
+  box.innerHTML = state.teams.map(t=>`
+    <div class="team-card">
+      <div class="flex items-center justify-between">
+        <span class="font-black text-lg">${t.name}</span>
+        <span class="text-xs px-2 py-1 rounded-full bg-yellow-400 text-slate-950 font-black">${t.members.length}명</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        ${t.members.map(m=>`<span class="chip px-2.5 py-1 rounded-full bg-white/10 text-xs">${m}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ─── 로비 (QR 대기) ─── */
+function renderLobby(){
+  // joined 현황 localStorage에서 갱신
+  const raw = localStorage.getItem(lsKey());
+  if(raw){
+    const saved = JSON.parse(raw);
+    if(saved.joined) state.joined = saved.joined;
+  }
+
+  const cnt = Object.values(state.joined).filter(Boolean).length;
+  document.getElementById('joinedCount').textContent = cnt;
+
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML='';
+  state.teams.forEach(t=>{
+    const url = teamUrl(t.name);
+    const isJoined = !!state.joined[t.name];
+    const card = document.createElement('div');
+    card.className = `join-card${isJoined?' joined':''}`;
+    card.innerHTML=`
+      <div class="join-card-left">
+        <div class="qr-thumb" id="qrthumb-${t.name.replace(/\s/g,'')}"></div>
+        <div>
+          <div class="font-black">${t.name}</div>
+          <div class="join-members">${t.members.join(', ')}</div>
+        </div>
+      </div>
+      <span class="join-badge${isJoined?' joined':''}">${isJoined?'✓ 접속됨':'대기중'}</span>
+    `;
+    grid.appendChild(card);
+    const thumb = card.querySelector('.qr-thumb');
+    makeQR(thumb, url, 80);
+    thumb.onclick=()=>{
+      document.getElementById('qrModalLabel').textContent=`${t.name} QR`;
+      document.getElementById('qrModalUrl').textContent=url;
+      makeQR(document.getElementById('qrModalCanvas'), url, 260);
+      document.getElementById('qrModal').classList.remove('hidden');
+      document.getElementById('qrModal').classList.add('flex');
     };
+  });
 
-    document.getElementById('btnBackToSelect').onclick = () => showScreen('select');
+  document.getElementById('joinList').innerHTML = state.teams.map(t=>{
+    const isJoined=!!state.joined[t.name];
+    return `
+      <div class="row-status${isJoined?' joined':''}">
+        <div class="dot${isJoined?' on':''}"></div>
+        <div class="flex-1">
+          <span class="font-bold">${t.name}</span>
+          <span class="text-xs text-slate-400 ml-2">${t.members.join(', ')}</span>
+        </div>
+        <span class="text-sm ${isJoined?'text-emerald-300 font-bold':'text-slate-500'}">${isJoined?'접속됨':'미접속'}</span>
+      </div>
+    `;
+  }).join('');
+}
 
-    document.getElementById('btnLoadDemo').onclick = () => {
-      document.getElementById('studentInput').value = demoStudents().join('\n');
-    };
+/* ─── 사회자 화면 ─── */
+function renderHost(){
+  document.getElementById('hostClass').textContent=`${state.selectedClass}반`;
+  document.getElementById('hostRound').textContent=`${state.round}라운드`;
+  document.getElementById('hostStatus').textContent=state.started?'진행중':'대기';
 
-    // 팀 배정
-    document.getElementById('btnAssignTeams').onclick = () => {
-      const students = document.getElementById('studentInput').value.split('\n').map(v => v.trim()).filter(Boolean);
-      if (!students.length) return alert('명단을 입력해주세요.');
-      state.teams = assignTeams(students);
-      initEconomy();
-      state.round = 1;
-      state.started = false;
-      state.currentNews = [];
-      state.prices = Object.fromEntries(STOCKS.map(s => [s.name, s.price]));
-      renderTeamPreview();
-      document.getElementById('rosterNextWrap').classList.remove('hidden');
-      save();
-    };
+  document.getElementById('newsArea').innerHTML = state.currentNews.length
+    ? state.currentNews.map(n=>`
+        <div class="p-4 rounded-2xl bg-black/20 border border-white/10">
+          <div class="font-black">${n.title}</div>
+          <div class="text-sm text-slate-300 mt-1">${n.text}</div>
+          <div class="text-xs text-slate-500 mt-2">관련 종목: ${n.stock}</div>
+        </div>`).join('')
+    : `<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 뉴스가 공개됩니다.</div>`;
 
-    // 명단 → 접속 대기
-    document.getElementById('btnGoLobby').onclick = () => {
-      renderLobby();
-      showScreen('lobby');
-    };
+  document.getElementById('chartArea').innerHTML = STOCKS.map(s=>{
+    const p = state.prices[s.name]??s.price;
+    const diff = ((p-s.price)/s.price)*100;
+    return `
+      <div class="p-3 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between">
+        <div><span class="font-black">${s.name}</span><span class="text-xs text-slate-500 ml-2">${s.sector}</span></div>
+        <div class="text-right">
+          <div class="font-black">${Math.round(p).toLocaleString()}원</div>
+          <div class="text-xs ${diff>=0?'text-emerald-300':'text-rose-300'}">${diff>=0?'+':''}${diff.toFixed(1)}%</div>
+        </div>
+      </div>`;
+  }).join('');
+  updateHeader();
+}
 
-    document.getElementById('btnBackToRoster').onclick = () => showScreen('roster');
-    document.getElementById('btnBackToLobby').onclick = () => {
-      renderLobby();
-      showScreen('lobby');
-    };
+/* ─── 학생 화면 ─── */
+function renderStudent(teamName){
+  document.getElementById('stuTeam').textContent = teamName;
+  document.getElementById('stuCash').textContent = `${(state.cash[teamName]??100000).toLocaleString()}원`;
+  document.getElementById('stuAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
 
-    // 게임 시작
-    document.getElementById('btnStartGame').onclick = () => {
-      if (!state.teams.length) return alert('먼저 팀 배정을 해주세요.');
-      state.started = true;
-      state.round = 1;
-      renderHost();
-      renderStudent();
-      renderResult();
-      showScreen('host');
-      save();
-      alert('게임이 시작되었습니다!');
-    };
+  const area = document.getElementById('tradeArea');
+  if(!state.started){
+    area.innerHTML=`<div class="p-5 rounded-2xl bg-black/20 text-slate-400 text-sm text-center">⏳ 선생님이 라운드를 시작할 때까지 기다려주세요.<br><span class="text-xs mt-1 block">새로고침 버튼을 누르면 상태가 갱신됩니다.</span></div>`;
+    return;
+  }
+  area.innerHTML = STOCKS.map(s=>{
+    const price = Math.round(state.prices[s.name]||s.price);
+    const qty = state.holdings[teamName]?.[s.name]||0;
+    return `
+      <div class="p-4 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="font-black">${s.name} <span class="text-xs text-slate-400 font-normal">${s.sector}</span></div>
+          <div class="text-sm text-slate-300 mt-0.5">현재가 ${price.toLocaleString()}원 · 보유 ${qty}주</div>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <button class="tradeBtn btn px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 font-black text-sm" data-a="buy" data-s="${s.name}">매수</button>
+          <button class="tradeBtn btn px-3 py-2 rounded-xl bg-rose-400 text-white font-black text-sm" data-a="sell" data-s="${s.name}">매도</button>
+        </div>
+      </div>`;
+  }).join('');
 
-    // 라운드 시작 / 종료 / 다음날
-    document.getElementById('btnRoundStart').onclick = () => {
-      if (!state.started) return alert('먼저 게임 시작을 눌러주세요.');
-      randomNews();
-      alert(`라운드 ${state.round} 시작! 뉴스를 읽어주세요.`);
-    };
-
-    document.getElementById('btnShuffleNews').onclick = randomNews;
-
-    document.getElementById('btnRoundEnd').onclick = () => {
-      state.started = false;
-      renderStudent();
-      renderResult();
-      showScreen('result');
-      save();
-      alert('라운드 종료! 학생들은 이제 매수/매도를 할 수 없습니다.');
-    };
-
-    document.getElementById('btnNextDay').onclick = () => {
-      applyDayChange();
-      showScreen('host');
-      alert('다음날 주가 변동이 반영되었습니다.');
-    };
-
-    document.getElementById('btnStudentRefresh').onclick = () => renderStudent();
-    document.getElementById('btnBackHost').onclick = () => showScreen('host');
-
-    // 저장 / 초기화
-    document.getElementById('btnSaveAll').onclick = () => { save(); alert('저장되었습니다.'); };
-    document.getElementById('btnResetAll').onclick = () => {
-      if (!confirm('현재 반의 저장 데이터를 초기화할까요?')) return;
-      localStorage.removeItem(storageKey());
-      location.reload();
-    };
-
-    // 접속 시뮬레이션 (테스트용)
-    let simIdx = 0;
-    document.getElementById('btnSimJoin').onclick = () => {
-      if (!state.teams.length) return;
-      if (simIdx < state.teams.length) {
-        state.joined[state.teams[simIdx].name] = true;
-        simIdx++;
-        save();
-        renderLobby();
+  document.querySelectorAll('.tradeBtn').forEach(btn=>{
+    btn.onclick=()=>{
+      const stock=btn.dataset.s, action=btn.dataset.a;
+      const price=Math.round(state.prices[stock]||0);
+      if(action==='buy'){
+        if((state.cash[teamName]||0)<price) return alert('현금이 부족합니다.');
+        state.cash[teamName]-=price;
+        state.holdings[teamName][stock]=(state.holdings[teamName][stock]||0)+1;
+      } else {
+        if((state.holdings[teamName][stock]||0)<=0) return alert('보유 주식이 없습니다.');
+        state.holdings[teamName][stock]-=1;
+        state.cash[teamName]+=price;
       }
-    };
-
-    // QR 모달 닫기
-    document.getElementById('btnCloseQrModal').onclick = closeModal;
-    document.getElementById('qrModal').addEventListener('click', e => {
-      if (e.target.id === 'qrModal') closeModal();
-    });
-    function closeModal() {
-      document.getElementById('qrModal').classList.add('hidden');
-      document.getElementById('qrModal').classList.remove('flex');
-    }
-
-    /* ───────────────── 초기 실행 ───────────────── */
-    load();
-    updateHeader();
-    renderTeamPreview();
-    renderHost();
-    renderStudent();
-    renderResult();
-
-    // 해시로 학생 접속 처리
-    const hashParams = new URLSearchParams(location.hash.replace('#', ''));
-    const teamFromHash = hashParams.get('team');
-    const classFromHash = hashParams.get('class');
-
-    if (teamFromHash && classFromHash) {
-      state.selectedClass = classFromHash;
-      load();
-      // 접속 기록
-      if (!state.joined) state.joined = {};
-      state.joined[decodeURIComponent(teamFromHash)] = true;
+      // 매수/매도 결과를 localStorage에 저장 → 선생님 화면에서 갱신 가능
       save();
-      renderStudent();
-      showScreen('student');
-    } else {
-      showScreen('select');
+      renderStudent(teamName);
+    };
+  });
+}
+
+/* ─── 결과 화면 ─── */
+function renderResult(){
+  const box = document.getElementById('resultArea');
+  if(!state.teams.length){ box.innerHTML=`<div class="p-4 text-slate-400">결과 없음</div>`; return; }
+  const sorted = [...state.teams].sort((a,b)=>teamAsset(b.name).total-teamAsset(a.name).total);
+  const medals=['🥇 1위','🥈 2위','🥉 3위','4위','5위','6위'];
+  const colors=['text-yellow-300','text-slate-300','text-amber-600','text-slate-400','text-slate-400','text-slate-400'];
+  box.innerHTML = sorted.map((t,i)=>{
+    const a=teamAsset(t.name);
+    return `
+      <div class="p-4 rounded-3xl bg-black/20 border border-white/10">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-black text-xl">${t.name}</div>
+          <div class="font-black ${colors[i]} text-sm">${medals[i]}</div>
+        </div>
+        <div class="space-y-1 text-sm text-slate-300">
+          <div>현금: <span class="font-bold text-white">${a.cash.toLocaleString()}원</span></div>
+          <div>주식: <span class="font-bold text-white">${Object.entries(state.holdings[t.name]||{}).filter(([,q])=>q>0).map(([n,q])=>`${n} ${q}주`).join(', ')||'없음'}</span></div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+          <span class="text-slate-400 text-sm">총 평가금</span>
+          <span class="font-black text-cyan-300 text-lg">${a.total.toLocaleString()}원</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ─── 뉴스 / 주가 변동 ─── */
+function randomNews(){ state.currentNews=shuffle(NEWS_POOL).slice(0,4); renderHost(); save(); }
+function applyDayChange(){
+  state.currentNews.forEach(n=>{
+    const base=STOCKS.find(s=>s.name===n.stock); if(!base) return;
+    const cur=state.prices[n.stock]||base.price;
+    state.prices[n.stock]=Math.max(1000,Math.round(cur*(1+n.effect+(Math.random()*.04-.02))));
+  });
+  STOCKS.forEach(s=>{
+    if(!state.currentNews.some(n=>n.stock===s.name)){
+      const cur=state.prices[s.name]||s.price;
+      state.prices[s.name]=Math.max(1000,Math.round(cur*(1+(Math.random()*.08-.04))));
     }
-  </script>
+  });
+  state.round++;
+  renderHost(); renderResult(); save();
+}
+
+/* ─── 이벤트 ─── */
+document.querySelectorAll('.classBtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.classBtn').forEach(b=>{b.classList.remove('bg-yellow-400','text-slate-950');b.classList.add('bg-white/10');});
+    btn.classList.add('bg-yellow-400','text-slate-950'); btn.classList.remove('bg-white/10');
+    state.selectedClass=btn.dataset.class;
+    loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+  });
+});
+
+document.getElementById('btnEnterClass').onclick=()=>{
+  show('roster');
+  document.getElementById('rosterLabel').textContent=`${state.selectedClass}반`;
+  renderTeamPreview();
+};
+document.getElementById('btnBackSelect').onclick=()=>show('select');
+document.getElementById('btnLoadDemo').onclick=()=>{ document.getElementById('studentInput').value=demoStudents().join('\n'); };
+
+document.getElementById('btnAssign').onclick=()=>{
+  const students=document.getElementById('studentInput').value.split('\n').map(v=>v.trim()).filter(Boolean);
+  if(!students.length) return alert('명단을 입력해주세요.');
+  state.teams=assignTeams(students);
+  initEconomy(); resetPrices(); state.round=1; state.started=false; state.currentNews=[];
+  renderTeamPreview();
+  document.getElementById('rosterNext').classList.remove('hidden');
+  save();
+};
+
+document.getElementById('btnGoLobby').onclick=()=>{ renderLobby(); show('lobby'); };
+document.getElementById('btnBackRoster').onclick=()=>show('roster');
+document.getElementById('btnToLobby').onclick=()=>{ renderLobby(); show('lobby'); };
+document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
+
+document.getElementById('btnStartGame').onclick=()=>{
+  if(!state.teams.length) return alert('먼저 팀 배정을 해주세요.');
+  state.started=true; state.round=1;
+  renderHost(); renderResult(); show('host'); save();
+  alert('게임이 시작되었습니다!');
+};
+
+document.getElementById('btnRoundStart').onclick=()=>{
+  if(!state.started) return alert('먼저 게임 시작을 눌러주세요.');
+  randomNews(); alert(`라운드 ${state.round} 시작! 뉴스를 읽어주세요.`);
+};
+document.getElementById('btnShuffleNews').onclick=randomNews;
+document.getElementById('btnRoundEnd').onclick=()=>{
+  state.started=false; renderResult(); show('result'); save();
+  alert('라운드 종료! 학생들은 매수/매도 불가합니다.');
+};
+document.getElementById('btnNextDay').onclick=()=>{ applyDayChange(); show('host'); alert('다음날 주가 변동이 반영되었습니다.'); };
+document.getElementById('btnBackHost').onclick=()=>show('host');
+
+document.getElementById('btnStuRefresh').onclick=()=>{
+  // 새로고침 시 URL 해시에서 최신 상태 다시 읽기
+  location.reload();
+};
+
+document.getElementById('btnSave').onclick=()=>{ save(); alert('저장되었습니다.'); };
+document.getElementById('btnReset').onclick=()=>{
+  if(!confirm('현재 반 데이터를 초기화할까요?')) return;
+  localStorage.removeItem(lsKey()); location.reload();
+};
+
+// 모달
+document.getElementById('btnCloseModal').onclick=closeModal;
+document.getElementById('qrModal').addEventListener('click',e=>{ if(e.target.id==='qrModal') closeModal(); });
+function closeModal(){ document.getElementById('qrModal').classList.add('hidden'); document.getElementById('qrModal').classList.remove('flex'); }
+
+/* ─── 초기 진입 처리 ─── */
+const hash = new URLSearchParams(location.hash.replace('#',''));
+const teamFromHash = hash.get('t');
+const dataFromHash = hash.get('d');
+
+if(teamFromHash && dataFromHash){
+  // 학생 태블릿 접속: URL에서 게임 상태 복원
+  const ok = decodeState(dataFromHash);
+  if(ok){
+    const teamName = decodeURIComponent(teamFromHash);
+    // 접속 기록을 localStorage에 남기기 (선생님 화면 갱신용)
+    const lsRaw = localStorage.getItem(lsKey());
+    const lsData = lsRaw ? JSON.parse(lsRaw) : {};
+    if(!lsData.joined) lsData.joined={};
+    lsData.joined[teamName]=true;
+    localStorage.setItem(lsKey(), JSON.stringify(lsData));
+
+    updateHeader();
+    renderStudent(teamName);
+    show('student');
+  } else {
+    alert('접속 링크가 올바르지 않습니다. 선생님께 새 QR을 요청하세요.');
+    show('select');
+  }
+} else {
+  // 선생님 컴퓨터
+  loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+  show('select');
+}
+</script>
 </body>
 </html>
