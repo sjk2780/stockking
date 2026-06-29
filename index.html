@@ -1,54 +1,54 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>구갈중 주식왕</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
-    :root{ --bg1:#07111f; --bg2:#0f172a; --bg3:#1e293b; }
-    html,body{height:100%;}
+    :root{--bg1:#07111f;--bg2:#0f172a;--bg3:#1e293b;}
+    html,body{height:100%;margin:0;}
     body{
-      margin:0;
       background:
         radial-gradient(circle at top left,rgba(59,130,246,.18),transparent 30%),
         radial-gradient(circle at top right,rgba(168,85,247,.16),transparent 28%),
         linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3));
-      color:#fff; overflow-x:hidden;
+      color:#fff;overflow-x:hidden;
     }
     .glass{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);box-shadow:0 18px 40px rgba(0,0,0,.28);}
     .glow{box-shadow:0 0 0 1px rgba(251,191,36,.18),0 0 30px rgba(251,191,36,.12);}
     .screen{display:none;animation:fadeIn .28s ease-out;}
     .screen.active{display:block;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-    .btn{transition:transform .15s,filter .15s,background .15s;}
+    .btn{transition:transform .15s,filter .15s;}
     .btn:hover{transform:translateY(-1px);filter:brightness(1.05);}
     .btn:active{transform:scale(.99);}
     .chip{transition:transform .15s;}.chip:hover{transform:scale(1.02);}
-    .ms::-webkit-scrollbar{width:8px}.ms::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
+    .ms::-webkit-scrollbar{width:6px}.ms::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
     .team-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:1.25rem;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem;}
-    .join-card{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.875rem 1rem;border-radius:1.25rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:all .25s;}
+    .join-card{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:all .25s;}
     .join-card.joined{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.1);}
-    .join-card-left{display:flex;align-items:center;gap:.75rem;}
-    .join-badge{font-size:.7rem;font-weight:900;padding:.25rem .6rem;border-radius:99px;background:rgba(255,255,255,.12);color:#cbd5e1;white-space:nowrap;}
+    .join-badge{font-size:.68rem;font-weight:900;padding:.2rem .5rem;border-radius:99px;background:rgba(255,255,255,.12);color:#cbd5e1;white-space:nowrap;flex-shrink:0;}
     .join-badge.joined{background:#22c55e;color:#052e16;}
-    .join-members{font-size:.78rem;color:#94a3b8;line-height:1.4;}
-    .qr-thumb{width:80px;height:80px;border-radius:.5rem;overflow:hidden;cursor:pointer;flex-shrink:0;background:#fff;}
+    .join-members{font-size:.68rem;color:#94a3b8;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;}
+    .qr-thumb{width:64px;height:64px;border-radius:.4rem;overflow:hidden;cursor:pointer;flex-shrink:0;background:#fff;}
     .qr-thumb:hover{opacity:.85;}
-    .dot{width:.75rem;height:.75rem;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;}
+    .dot{width:.7rem;height:.7rem;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;}
     .dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e;}
-    .row-status{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
-    .row-status.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
-    .join-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;}
-    @media(max-width:768px){.mhide{display:none!important}}
+    .row-s{display:flex;align-items:center;gap:.6rem;padding:.6rem .875rem;border-radius:.875rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
+    .row-s.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
+    .qr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
   </style>
 </head>
 <body>
 <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
 
   <!-- 헤더 -->
-  <header class="glass rounded-3xl p-5 md:p-6 mb-5 md:mb-8 glow">
+  <header id="mainHeader" class="glass rounded-3xl p-5 md:p-6 mb-5 md:mb-8 glow">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div class="flex items-center gap-3">
         <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-900 font-black text-xs">구갈중</span>
@@ -91,17 +91,17 @@
             <h2 class="text-2xl md:text-3xl font-black"><span id="rosterLabel">5반</span> 명단 입력</h2>
             <p class="text-slate-300 text-sm mt-1">이름을 한 줄에 하나씩 입력 → 6팀 랜덤 배정</p>
           </div>
-          <div class="flex gap-2 flex-wrap">
+          <div class="flex gap-2">
             <button id="btnBackSelect" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
             <button id="btnAssign" class="btn px-5 py-3 rounded-2xl bg-indigo-500 text-white font-black">6팀 랜덤 배정</button>
           </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단</label>
             <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예)&#10;김민준&#10;이서연&#10;박지후"></textarea>
           </div>
-          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xl font-black">팀 배정 결과</h3>
               <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black">6팀 고정</span>
@@ -112,7 +112,7 @@
         <div id="rosterNext" class="hidden mt-5 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3">
           <div>
             <div class="font-black text-emerald-300">✓ 팀 배정 완료!</div>
-            <div class="text-sm text-slate-300 mt-0.5">학생들이 QR로 접속할 수 있도록 대기 화면을 시작하세요.</div>
+            <div class="text-sm text-slate-300 mt-0.5">QR 대기 화면을 시작하세요.</div>
           </div>
           <button id="btnGoLobby" class="btn px-5 py-3 rounded-2xl bg-emerald-400 text-slate-950 font-black whitespace-nowrap">접속 대기 시작 →</button>
         </div>
@@ -122,30 +122,29 @@
     <!-- ③ QR 접속 대기 -->
     <section id="screen-lobby" class="screen">
       <div class="glass rounded-3xl p-5 md:p-8">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
           <div>
             <h2 class="text-2xl md:text-3xl font-black">QR 접속 대기</h2>
-            <p class="text-slate-300 text-sm mt-1">각 팀이 QR을 찍고 접속하면 초록색으로 바뀝니다. 모두 접속하면 게임 시작!</p>
+            <p class="text-slate-300 text-sm mt-1">각 팀이 QR을 찍고 접속하면 초록색으로 바뀝니다.</p>
           </div>
           <div class="flex gap-2 flex-wrap">
             <button id="btnBackRoster" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
+            <button id="btnRefreshLobby" class="btn px-3 py-2 rounded-2xl bg-white/10 text-sm font-bold">🔄 갱신</button>
             <button id="btnStartGame" class="btn px-6 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg">▶ 게임 시작</button>
           </div>
         </div>
-        <!-- 접속 현황 요약 -->
-        <div class="mb-5 p-4 rounded-2xl bg-white/6 border border-white/10 flex items-center gap-4 flex-wrap">
+        <div class="mb-4 p-4 rounded-2xl bg-white/6 border border-white/10 flex items-center gap-4">
           <div class="text-3xl font-black text-cyan-300"><span id="joinedCount">0</span><span class="text-slate-400 text-xl font-bold"> / 6팀</span></div>
-          <div class="text-slate-300 text-sm">접속 완료 <span class="block text-xs text-slate-400">QR 찍으면 자동으로 초록색으로 바뀝니다</span></div>
-          <button id="btnRefreshLobby" class="ml-auto btn px-3 py-2 rounded-xl bg-white/10 text-xs font-bold">🔄 접속 현황 갱신</button>
+          <div class="text-slate-300 text-sm">접속 완료<br><span class="text-xs text-slate-400">QR 찍으면 자동으로 초록색으로 바뀝니다</span></div>
         </div>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <div>
-            <div class="text-sm font-bold text-slate-300 mb-3">팀별 QR — 클릭하면 크게 보기</div>
-            <div class="join-grid" id="qrGrid"></div>
+            <div class="text-sm font-bold text-slate-300 mb-2">팀별 QR — 클릭하면 크게 보기</div>
+            <div class="qr-grid" id="qrGrid"></div>
           </div>
           <div>
-            <div class="text-sm font-bold text-slate-300 mb-3">접속 현황</div>
-            <div id="joinList" class="space-y-2"></div>
+            <div class="text-sm font-bold text-slate-300 mb-2">접속 현황</div>
+            <div id="joinList" class="space-y-1.5"></div>
           </div>
         </div>
       </div>
@@ -162,8 +161,8 @@
           <div class="flex gap-2 flex-wrap">
             <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">라운드 시작</button>
             <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">라운드 종료</button>
-            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">다음날 주가 확인</button>
-            <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기화면</button>
+            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">다음날 주가</button>
+            <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기</button>
           </div>
         </div>
         <div class="grid grid-cols-3 gap-3 mb-5">
@@ -181,14 +180,14 @@
           </div>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xl font-black">이번 라운드 뉴스</h3>
               <button id="btnShuffleNews" class="btn px-3 py-2 rounded-xl bg-white/10 text-sm font-bold">새로 뽑기</button>
             </div>
             <div id="newsArea" class="space-y-3 ms max-h-96 overflow-auto"></div>
           </div>
-          <div class="p-4 md:p-5 rounded-3xl bg-white/8 border border-white/10">
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xl font-black">주식 현황</h3>
               <span class="text-xs text-slate-400">라운드 종료 후 반영</span>
@@ -199,9 +198,9 @@
       </div>
     </section>
 
-    <!-- ⑤ 학생 태블릿 화면 -->
+    <!-- ⑤ 학생 화면 -->
     <section id="screen-student" class="screen">
-      <!-- 헤더바 -->
+      <!-- 학생 전용 헤더 -->
       <div class="glass rounded-3xl p-4 mb-4 glow">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -212,21 +211,21 @@
         </div>
       </div>
 
-      <!-- 대기 화면 (게임 시작 전) -->
-      <div id="stuWaiting" class="glass rounded-3xl p-8 text-center" style="display:none">
+      <!-- 대기 화면 -->
+      <div id="stuWaiting" class="glass rounded-3xl p-8 text-center">
         <div class="text-7xl mb-5">⏳</div>
         <h2 class="text-2xl font-black mb-2">선생님을 기다리는 중...</h2>
-        <p class="text-slate-300 text-sm mb-6">선생님이 게임을 시작하면 주식 거래 화면이 나타납니다.</p>
+        <p class="text-slate-300 text-sm mb-6">선생님이 게임을 시작하면 자동으로 거래 화면이 나타납니다.</p>
         <div class="p-4 rounded-2xl bg-white/6 border border-white/10 mb-5">
           <div class="text-xs text-slate-400 mb-1">내 팀</div>
           <div id="stuTeamWait" class="text-4xl font-black text-cyan-300">1팀</div>
         </div>
         <div class="p-4 rounded-2xl bg-yellow-400/10 border border-yellow-400/30 text-sm text-yellow-300 font-bold">
-          선생님이 "게임 시작"을 누른 뒤<br>🔄 새로고침 버튼을 눌러주세요!
+          🔄 새로고침 버튼을 누르면 상태가 갱신됩니다
         </div>
       </div>
 
-      <!-- 거래 화면 (게임 시작 후) -->
+      <!-- 거래 화면 -->
       <div id="stuGame" style="display:none">
         <div class="grid grid-cols-3 gap-3 mb-4">
           <div class="glass rounded-2xl p-4">
@@ -255,7 +254,7 @@
         <div class="flex items-center justify-between gap-3 mb-5">
           <div>
             <h2 class="text-2xl md:text-3xl font-black">라운드 결과</h2>
-            <p class="text-slate-300 text-sm mt-1">다음날 주가 변동과 팀별 평가금을 확인합니다.</p>
+            <p class="text-slate-300 text-sm mt-1">팀별 순위와 평가금을 확인합니다.</p>
           </div>
           <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 사회자 화면</button>
         </div>
@@ -274,12 +273,31 @@
       <button id="btnCloseModal" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-sm">닫기</button>
     </div>
     <div id="qrModalCanvas" class="flex justify-center"></div>
-    <div id="qrModalUrl" class="mt-3 font-mono text-xs text-slate-500 break-all"></div>
   </div>
 </div>
 
 <script>
-/* ─── 상수 ─── */
+/* ══════════════════════════════════════
+   Firebase 초기화
+══════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyA353aGhoZh3SiKRT2diXoN4b2u2UF7TLQ",
+  authDomain: "stockking-71128.firebaseapp.com",
+  databaseURL: "https://stockking-71128-default-rtdb.firebaseio.com",
+  projectId: "stockking-71128",
+  storageBucket: "stockking-71128.firebasestorage.app",
+  messagingSenderId: "15855354465",
+  appId: "1:15855354465:web:a80ec27e0a3465f2f96020"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// DB 경로: /games/{반} 에 게임 상태 저장
+function dbRef(cls){ return db.ref(`games/class_${cls||state.selectedClass}`); }
+
+/* ══════════════════════════════════════
+   상수
+══════════════════════════════════════ */
 const STOCKS = [
   {name:'구갈반도체',sector:'반도체',price:12000},
   {name:'심성전기',sector:'전기',price:8400},
@@ -306,75 +324,68 @@ const NEWS_POOL = [
   {stock:'용인스포츠',title:'국제 대회 후원 계약',effect:0.1,text:'용인스포츠가 국제 대회 후원 계약을 따냈습니다.'}
 ];
 
-/* ─── 상태 ─── */
+/* ══════════════════════════════════════
+   상태
+══════════════════════════════════════ */
 const state = {
   selectedClass:'5', teams:[], round:1, started:false,
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
 };
-function resetPrices(){ state.prices = Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
+function resetPrices(){ state.prices=Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
 resetPrices();
 
-/* ─── localStorage (선생님 컴퓨터 전용) ─── */
-const lsKey = ()=>`gugal_v3_${state.selectedClass}`;
-function save(){
-  localStorage.setItem(lsKey(), JSON.stringify(state));
-}
-function loadLS(){
-  const raw = localStorage.getItem(lsKey());
-  if(raw) Object.assign(state, JSON.parse(raw));
-}
+// 현재 접속중인 팀 (학생 화면용)
+let myTeamName = null;
+let dbListener = null; // 실시간 리스너 핸들
 
-/* ────────────────────────────────────────────────
-   핵심: 게임 상태를 URL 해시에 압축해서 담기
-   학생 QR에는 이 압축 데이터가 통째로 들어감
-   → 학생 태블릿은 선생님 localStorage 없이 동작!
-──────────────────────────────────────────────── */
-function encodeState(){
-  // 필요한 핵심 데이터만 추림
-  const payload = {
-    c: state.selectedClass,              // 반
-    r: state.round,                      // 라운드
-    s: state.started ? 1 : 0,           // 시작여부
-    p: STOCKS.map(s=>state.prices[s.name]??s.price),  // 주가 배열
-    t: state.teams.map(t=>({            // 팀 (이름+멤버+현금+보유)
-      n: t.name,
-      m: t.members,
-      ca: state.cash[t.name]??100000,
-      h: STOCKS.map(s=>state.holdings[t.name]?.[s.name]??0)
-    }))
+/* ══════════════════════════════════════
+   Firebase 저장 / 불러오기
+══════════════════════════════════════ */
+function saveToFirebase(){
+  const data = {
+    selectedClass: state.selectedClass,
+    teams: state.teams,
+    round: state.round,
+    started: state.started,
+    currentNews: state.currentNews,
+    prices: state.prices,
+    cash: state.cash,
+    holdings: state.holdings,
+    joined: state.joined
   };
-  return btoa(encodeURIComponent(JSON.stringify(payload)));
+  dbRef().set(data);
 }
 
-function decodeState(encoded){
-  try{
-    const payload = JSON.parse(decodeURIComponent(atob(encoded)));
-    state.selectedClass = payload.c;
-    state.round = payload.r;
-    state.started = !!payload.s;
-    STOCKS.forEach((s,i)=>{ state.prices[s.name] = payload.p[i]; });
-    state.teams = payload.t.map(t=>({name:t.n, members:t.m}));
-    state.cash = {};
-    state.holdings = {};
-    payload.t.forEach(t=>{
-      state.cash[t.n] = t.ca;
-      state.holdings[t.n] = {};
-      STOCKS.forEach((s,i)=>{ state.holdings[t.n][s.name] = t.h[i]; });
-    });
-    return true;
-  }catch(e){ return false; }
+function loadFromFirebase(callback){
+  dbRef().get().then(snap=>{
+    if(snap.exists()){
+      const d = snap.val();
+      Object.assign(state, d);
+    }
+    if(callback) callback();
+  });
 }
 
-/* QR URL 생성 — 팀 이름 + 현재 게임 상태 전체 포함 */
-function teamUrl(teamName){
-  const encoded = encodeState();
-  return `${location.origin}${location.pathname}#t=${encodeURIComponent(teamName)}&d=${encoded}`;
+/* ══════════════════════════════════════
+   실시간 리스너 (학생 화면용)
+   선생님이 Firebase 업데이트 → 학생 화면 자동 반영
+══════════════════════════════════════ */
+function startStudentListener(teamName){
+  if(dbListener) dbRef(state.selectedClass).off('value', dbListener);
+  dbListener = dbRef(state.selectedClass).on('value', snap=>{
+    if(!snap.exists()) return;
+    const d = snap.val();
+    Object.assign(state, d);
+    renderStudentUI(teamName);
+  });
 }
 
-/* ─── 유틸 ─── */
+/* ══════════════════════════════════════
+   유틸
+══════════════════════════════════════ */
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
 function assignTeams(students){
-  const teams = Array.from({length:6},(_,i)=>({name:`${i+1}팀`,members:[]}));
+  const teams=Array.from({length:6},(_,i)=>({name:`${i+1}팀`,members:[]}));
   shuffle(students).forEach((s,i)=>teams[i%6].members.push(s));
   return teams;
 }
@@ -388,49 +399,54 @@ function initEconomy(){
   });
 }
 function teamAsset(name){
-  const cash = state.cash[name]??100000;
-  const sv = Object.entries(state.holdings[name]||{})
-    .reduce((sum,[n,q])=>sum+q*(state.prices[n]||0),0);
-  return {cash, sv, total:cash+sv};
+  const cash=state.cash[name]??100000;
+  const sv=Object.entries(state.holdings[name]||{}).reduce((sum,[n,q])=>sum+q*(state.prices[n]||0),0);
+  return {cash,sv,total:cash+sv};
 }
+
+// QR URL: 짧게! 반+팀만 담음 → Firebase에서 나머지 읽어옴
+function teamUrl(teamName){
+  return `${location.origin}${location.pathname}?c=${state.selectedClass}&t=${encodeURIComponent(teamName)}`;
+}
+
 function demoStudents(){
   return ['김민준','이서연','박지후','최유진','정하늘','오세훈','한지우','윤서아','강도윤','임수빈','조현우','문가온','백시윤','홍예린','장서준','노아린','서도현','배하린','신우진','허지민','곽태양','이도윤','김서준','박하린'];
 }
 
-/* ─── 화면 전환 ─── */
-const SCREENS = ['select','roster','lobby','host','student','result'];
+/* ══════════════════════════════════════
+   화면 전환
+══════════════════════════════════════ */
+const SCREENS=['select','roster','lobby','host','student','result'];
 function show(id){
   SCREENS.forEach(n=>document.getElementById(`screen-${n}`).classList.toggle('active',n===id));
-  // 학생 화면은 헤더 숨기고 최상단 스크롤
-  const header = document.querySelector('header');
-  if(id === 'student'){
-    header.style.display = 'none';
-    window.scrollTo(0,0);
-  } else {
-    header.style.display = '';
-  }
+  // 학생 화면은 메인 헤더 숨기고 최상단으로
+  document.getElementById('mainHeader').style.display = id==='student' ? 'none' : '';
+  if(id==='student') window.scrollTo(0,0);
 }
 
-/* ─── 헤더 ─── */
 function updateHeader(){
-  document.getElementById('hClass').textContent = `${state.selectedClass}반`;
-  document.getElementById('hRound').textContent = `${state.round}라운드`;
+  document.getElementById('hClass').textContent=`${state.selectedClass}반`;
+  document.getElementById('hRound').textContent=`${state.round}라운드`;
 }
 
-/* ─── QR 생성 ─── */
-function makeQR(el, url, size){
+/* ══════════════════════════════════════
+   QR 생성
+══════════════════════════════════════ */
+function makeQR(el,url,size){
   el.innerHTML='';
   new QRCode(el,{text:url,width:size,height:size,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
 }
 
-/* ─── 팀 미리보기 ─── */
+/* ══════════════════════════════════════
+   팀 미리보기
+══════════════════════════════════════ */
 function renderTeamPreview(){
-  const box = document.getElementById('teamPreview');
+  const box=document.getElementById('teamPreview');
   if(!state.teams.length){
     box.innerHTML=`<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">명단을 입력하고 배정하세요.</div>`;
     return;
   }
-  box.innerHTML = state.teams.map(t=>`
+  box.innerHTML=state.teams.map(t=>`
     <div class="team-card">
       <div class="flex items-center justify-between">
         <span class="font-black text-lg">${t.name}</span>
@@ -439,84 +455,80 @@ function renderTeamPreview(){
       <div class="flex flex-wrap gap-1.5">
         ${t.members.map(m=>`<span class="chip px-2.5 py-1 rounded-full bg-white/10 text-xs">${m}</span>`).join('')}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-/* ─── 로비 (QR 대기) ─── */
+/* ══════════════════════════════════════
+   로비 (QR 대기)
+══════════════════════════════════════ */
 function renderLobby(){
-  // joined 현황 localStorage에서 갱신
-  const raw = localStorage.getItem(lsKey());
-  if(raw){
-    const saved = JSON.parse(raw);
-    if(saved.joined) state.joined = saved.joined;
-  }
+  // Firebase에서 최신 joined 상태 가져오기
+  dbRef().get().then(snap=>{
+    if(snap.exists() && snap.val().joined) state.joined=snap.val().joined;
+    _drawLobby();
+  }).catch(()=>_drawLobby());
+}
 
-  const cnt = Object.values(state.joined).filter(Boolean).length;
-  document.getElementById('joinedCount').textContent = cnt;
+function _drawLobby(){
+  const cnt=Object.values(state.joined).filter(Boolean).length;
+  document.getElementById('joinedCount').textContent=cnt;
 
-  const grid = document.getElementById('qrGrid');
+  const grid=document.getElementById('qrGrid');
   grid.innerHTML='';
   state.teams.forEach(t=>{
-    const url = teamUrl(t.name);
-    const isJoined = !!state.joined[t.name];
-    const card = document.createElement('div');
-    card.className = `join-card${isJoined?' joined':''}`;
+    const url=teamUrl(t.name);
+    const isJoined=!!state.joined[t.name];
+    const card=document.createElement('div');
+    card.className=`join-card${isJoined?' joined':''}`;
     card.innerHTML=`
-      <div class="join-card-left">
-        <div class="qr-thumb" id="qrthumb-${t.name.replace(/\s/g,'')}"></div>
-        <div>
-          <div class="font-black">${t.name}</div>
-          <div class="join-members">${t.members.join(', ')}</div>
-        </div>
+      <div class="qr-thumb" data-team="${t.name}"></div>
+      <div style="min-width:0">
+        <div class="font-black text-sm">${t.name}</div>
+        <div class="join-members">${t.members.join(', ')}</div>
       </div>
-      <span class="join-badge${isJoined?' joined':''}">${isJoined?'✓ 접속됨':'대기중'}</span>
-    `;
+      <span class="join-badge${isJoined?' joined':''}">${isJoined?'✓':'대기'}</span>`;
     grid.appendChild(card);
-    const thumb = card.querySelector('.qr-thumb');
-    makeQR(thumb, url, 80);
+    const thumb=card.querySelector('.qr-thumb');
+    makeQR(thumb,url,64);
     thumb.onclick=()=>{
       document.getElementById('qrModalLabel').textContent=`${t.name} QR`;
-      document.getElementById('qrModalUrl').textContent=url;
-      makeQR(document.getElementById('qrModalCanvas'), url, 260);
+      makeQR(document.getElementById('qrModalCanvas'),url,240);
       document.getElementById('qrModal').classList.remove('hidden');
       document.getElementById('qrModal').classList.add('flex');
     };
   });
 
-  document.getElementById('joinList').innerHTML = state.teams.map(t=>{
+  document.getElementById('joinList').innerHTML=state.teams.map(t=>{
     const isJoined=!!state.joined[t.name];
     return `
-      <div class="row-status${isJoined?' joined':''}">
+      <div class="row-s${isJoined?' joined':''}">
         <div class="dot${isJoined?' on':''}"></div>
-        <div class="flex-1">
-          <span class="font-bold">${t.name}</span>
-          <span class="text-xs text-slate-400 ml-2">${t.members.join(', ')}</span>
-        </div>
-        <span class="text-sm ${isJoined?'text-emerald-300 font-bold':'text-slate-500'}">${isJoined?'접속됨':'미접속'}</span>
-      </div>
-    `;
+        <div class="flex-1 text-sm"><span class="font-bold">${t.name}</span><span class="text-xs text-slate-400 ml-1">${t.members.join(', ')}</span></div>
+        <span class="text-xs ${isJoined?'text-emerald-300 font-bold':'text-slate-500'}">${isJoined?'접속됨':'미접속'}</span>
+      </div>`;
   }).join('');
 }
 
-/* ─── 사회자 화면 ─── */
+/* ══════════════════════════════════════
+   사회자 화면
+══════════════════════════════════════ */
 function renderHost(){
   document.getElementById('hostClass').textContent=`${state.selectedClass}반`;
   document.getElementById('hostRound').textContent=`${state.round}라운드`;
   document.getElementById('hostStatus').textContent=state.started?'진행중':'대기';
 
-  document.getElementById('newsArea').innerHTML = state.currentNews.length
-    ? state.currentNews.map(n=>`
+  document.getElementById('newsArea').innerHTML=state.currentNews.length
+    ?state.currentNews.map(n=>`
         <div class="p-4 rounded-2xl bg-black/20 border border-white/10">
           <div class="font-black">${n.title}</div>
           <div class="text-sm text-slate-300 mt-1">${n.text}</div>
-          <div class="text-xs text-slate-500 mt-2">관련 종목: ${n.stock}</div>
+          <div class="text-xs text-slate-500 mt-1">관련 종목: ${n.stock}</div>
         </div>`).join('')
-    : `<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 뉴스가 공개됩니다.</div>`;
+    :`<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 뉴스가 공개됩니다.</div>`;
 
-  document.getElementById('chartArea').innerHTML = STOCKS.map(s=>{
-    const p = state.prices[s.name]??s.price;
-    const diff = ((p-s.price)/s.price)*100;
+  document.getElementById('chartArea').innerHTML=STOCKS.map(s=>{
+    const p=state.prices[s.name]??s.price;
+    const diff=((p-s.price)/s.price)*100;
     return `
       <div class="p-3 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between">
         <div><span class="font-black">${s.name}</span><span class="text-xs text-slate-500 ml-2">${s.sector}</span></div>
@@ -529,30 +541,29 @@ function renderHost(){
   updateHeader();
 }
 
-/* ─── 학생 화면 ─── */
-function renderStudent(teamName){
-  // 헤더 배지
-  document.getElementById('stuTeamBadge').textContent = teamName;
+/* ══════════════════════════════════════
+   학생 화면 (Firebase 실시간)
+══════════════════════════════════════ */
+function renderStudentUI(teamName){
+  document.getElementById('stuTeamBadge').textContent=teamName;
 
   if(!state.started){
-    // 대기 화면
-    document.getElementById('stuWaiting').style.display = '';
-    document.getElementById('stuGame').style.display = 'none';
-    document.getElementById('stuTeamWait').textContent = teamName;
+    document.getElementById('stuWaiting').style.display='';
+    document.getElementById('stuGame').style.display='none';
+    document.getElementById('stuTeamWait').textContent=teamName;
     return;
   }
 
-  // 거래 화면
-  document.getElementById('stuWaiting').style.display = 'none';
-  document.getElementById('stuGame').style.display = '';
-  document.getElementById('stuTeam').textContent = teamName;
-  document.getElementById('stuCash').textContent = `${(state.cash[teamName]??100000).toLocaleString()}원`;
-  document.getElementById('stuAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
+  document.getElementById('stuWaiting').style.display='none';
+  document.getElementById('stuGame').style.display='';
+  document.getElementById('stuTeam').textContent=teamName;
+  document.getElementById('stuCash').textContent=`${(state.cash[teamName]??100000).toLocaleString()}원`;
+  document.getElementById('stuAsset').textContent=`${teamAsset(teamName).total.toLocaleString()}원`;
 
-  const area = document.getElementById('tradeArea');
-  area.innerHTML = STOCKS.map(s=>{
-    const price = Math.round(state.prices[s.name]||s.price);
-    const qty = state.holdings[teamName]?.[s.name]||0;
+  const area=document.getElementById('tradeArea');
+  area.innerHTML=STOCKS.map(s=>{
+    const price=Math.round(state.prices[s.name]||s.price);
+    const qty=state.holdings[teamName]?.[s.name]||0;
     return `
       <div class="p-4 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
@@ -579,20 +590,24 @@ function renderStudent(teamName){
         state.holdings[teamName][stock]-=1;
         state.cash[teamName]+=price;
       }
-      save();
-      renderStudent(teamName);
+      // 매수/매도 결과 Firebase에 즉시 저장
+      db.ref(`games/class_${state.selectedClass}/cash/${teamName}`).set(state.cash[teamName]);
+      db.ref(`games/class_${state.selectedClass}/holdings/${teamName}`).set(state.holdings[teamName]);
+      renderStudentUI(teamName);
     };
   });
 }
 
-/* ─── 결과 화면 ─── */
+/* ══════════════════════════════════════
+   결과 화면
+══════════════════════════════════════ */
 function renderResult(){
-  const box = document.getElementById('resultArea');
+  const box=document.getElementById('resultArea');
   if(!state.teams.length){ box.innerHTML=`<div class="p-4 text-slate-400">결과 없음</div>`; return; }
-  const sorted = [...state.teams].sort((a,b)=>teamAsset(b.name).total-teamAsset(a.name).total);
+  const sorted=[...state.teams].sort((a,b)=>teamAsset(b.name).total-teamAsset(a.name).total);
   const medals=['🥇 1위','🥈 2위','🥉 3위','4위','5위','6위'];
   const colors=['text-yellow-300','text-slate-300','text-amber-600','text-slate-400','text-slate-400','text-slate-400'];
-  box.innerHTML = sorted.map((t,i)=>{
+  box.innerHTML=sorted.map((t,i)=>{
     const a=teamAsset(t.name);
     return `
       <div class="p-4 rounded-3xl bg-black/20 border border-white/10">
@@ -612,8 +627,10 @@ function renderResult(){
   }).join('');
 }
 
-/* ─── 뉴스 / 주가 변동 ─── */
-function randomNews(){ state.currentNews=shuffle(NEWS_POOL).slice(0,4); renderHost(); save(); }
+/* ══════════════════════════════════════
+   뉴스 / 주가 변동
+══════════════════════════════════════ */
+function randomNews(){ state.currentNews=shuffle(NEWS_POOL).slice(0,4); renderHost(); saveToFirebase(); }
 function applyDayChange(){
   state.currentNews.forEach(n=>{
     const base=STOCKS.find(s=>s.name===n.stock); if(!base) return;
@@ -627,16 +644,18 @@ function applyDayChange(){
     }
   });
   state.round++;
-  renderHost(); renderResult(); save();
+  renderHost(); renderResult(); saveToFirebase();
 }
 
-/* ─── 이벤트 ─── */
+/* ══════════════════════════════════════
+   이벤트
+══════════════════════════════════════ */
 document.querySelectorAll('.classBtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.classBtn').forEach(b=>{b.classList.remove('bg-yellow-400','text-slate-950');b.classList.add('bg-white/10');});
     btn.classList.add('bg-yellow-400','text-slate-950'); btn.classList.remove('bg-white/10');
     state.selectedClass=btn.dataset.class;
-    loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+    loadFromFirebase(()=>{ updateHeader(); renderTeamPreview(); renderHost(); renderResult(); });
   });
 });
 
@@ -655,7 +674,7 @@ document.getElementById('btnAssign').onclick=()=>{
   initEconomy(); resetPrices(); state.round=1; state.started=false; state.currentNews=[];
   renderTeamPreview();
   document.getElementById('rosterNext').classList.remove('hidden');
-  save();
+  saveToFirebase();
 };
 
 document.getElementById('btnGoLobby').onclick=()=>{ renderLobby(); show('lobby'); };
@@ -666,8 +685,9 @@ document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
 document.getElementById('btnStartGame').onclick=()=>{
   if(!state.teams.length) return alert('먼저 팀 배정을 해주세요.');
   state.started=true; state.round=1;
-  renderHost(); renderResult(); show('host'); save();
-  alert('게임이 시작되었습니다!');
+  saveToFirebase();
+  renderHost(); renderResult(); show('host');
+  alert('게임이 시작되었습니다! 학생들 화면이 자동으로 바뀝니다.');
 };
 
 document.getElementById('btnRoundStart').onclick=()=>{
@@ -676,30 +696,20 @@ document.getElementById('btnRoundStart').onclick=()=>{
 };
 document.getElementById('btnShuffleNews').onclick=randomNews;
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.started=false; renderResult(); show('result'); save();
-  alert('라운드 종료! 학생들은 매수/매도 불가합니다.');
+  state.started=false; saveToFirebase(); renderResult(); show('result');
+  alert('라운드 종료! 학생들 거래가 자동으로 막힙니다.');
 };
 document.getElementById('btnNextDay').onclick=()=>{ applyDayChange(); show('host'); alert('다음날 주가 변동이 반영되었습니다.'); };
 document.getElementById('btnBackHost').onclick=()=>show('host');
 
 document.getElementById('btnStuRefresh').onclick=()=>{
-  // URL 해시에서 최신 상태 다시 읽어서 렌더링
-  const hp = new URLSearchParams(location.hash.replace('#',''));
-  const tn = hp.get('t');
-  const dd = hp.get('d');
-  if(tn && dd){
-    decodeState(dd);
-    renderStudent(decodeURIComponent(tn));
-    show('student');
-  } else {
-    location.reload();
-  }
+  if(myTeamName) loadFromFirebase(()=>renderStudentUI(myTeamName));
 };
 
-document.getElementById('btnSave').onclick=()=>{ save(); alert('저장되었습니다.'); };
+document.getElementById('btnSave').onclick=()=>{ saveToFirebase(); alert('저장되었습니다.'); };
 document.getElementById('btnReset').onclick=()=>{
   if(!confirm('현재 반 데이터를 초기화할까요?')) return;
-  localStorage.removeItem(lsKey()); location.reload();
+  dbRef().remove().then(()=>location.reload());
 };
 
 // 모달
@@ -707,44 +717,36 @@ document.getElementById('btnCloseModal').onclick=closeModal;
 document.getElementById('qrModal').addEventListener('click',e=>{ if(e.target.id==='qrModal') closeModal(); });
 function closeModal(){ document.getElementById('qrModal').classList.add('hidden'); document.getElementById('qrModal').classList.remove('flex'); }
 
-/* ─── 초기 진입 처리 ─── */
-const hash = new URLSearchParams(location.hash.replace('#',''));
-const teamFromHash = hash.get('t');
-const dataFromHash = hash.get('d');
-const classFromHash = hash.get('c');
+/* ══════════════════════════════════════
+   초기 진입 처리
+   ?c=반&t=팀 → 학생 화면
+   아니면 → 선생님 화면
+══════════════════════════════════════ */
+const urlParams = new URLSearchParams(location.search);
+const classParam = urlParams.get('c');
+const teamParam  = urlParams.get('t');
 
-if(classFromHash && teamFromHash){
-  state.selectedClass = decodeURIComponent(classFromHash);
-  loadLS();
-  if(!state.joined) state.joined = {};
-  state.joined[decodeURIComponent(teamFromHash)] = true;
-  saveLS();
-  updateHeader();
-  renderStudent(decodeURIComponent(teamFromHash));
-  show('student');
-} else if(teamFromHash && dataFromHash){
-  // 학생 태블릿 접속: URL에서 게임 상태 복원
-  const ok = decodeState(dataFromHash);
-  if(ok){
-    const teamName = decodeURIComponent(teamFromHash);
-    // 접속 기록을 localStorage에 남기기 (선생님 화면 갱신용)
-    const lsRaw = localStorage.getItem(lsKey());
-    const lsData = lsRaw ? JSON.parse(lsRaw) : {};
-    if(!lsData.joined) lsData.joined={};
-    lsData.joined[teamName]=true;
-    localStorage.setItem(lsKey(), JSON.stringify(lsData));
+if(classParam && teamParam){
+  // ── 학생 접속 ──
+  myTeamName = decodeURIComponent(teamParam);
+  state.selectedClass = classParam;
 
-    updateHeader();
-    renderStudent(teamName);
+  // Firebase에서 게임 상태 불러오기
+  loadFromFirebase(()=>{
+    // 접속 기록
+    db.ref(`games/class_${classParam}/joined/${myTeamName}`).set(true);
+    renderStudentUI(myTeamName);
     show('student');
-  } else {
-    alert('접속 링크가 올바르지 않습니다. 선생님께 새 QR을 요청하세요.');
-    show('select');
-  }
+    // 실시간 리스너 시작 → 선생님 조작이 자동 반영
+    startStudentListener(myTeamName);
+  });
+
 } else {
-  // 선생님 컴퓨터
-  loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
-  show('select');
+  // ── 선생님 접속 ──
+  loadFromFirebase(()=>{
+    updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+    show('select');
+  });
 }
 </script>
 </body>
