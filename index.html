@@ -683,15 +683,42 @@ function closeModal(){ document.getElementById('qrModal').classList.add('hidden'
 
 /* ─── 초기 진입 처리 ─── */
 const hash = new URLSearchParams(location.hash.replace('#',''));
+const classFromHash = hash.get('c');
 const teamFromHash = hash.get('t');
 const dataFromHash = hash.get('d');
 
-if(teamFromHash && dataFromHash){
-  // 학생 태블릿 접속: URL에서 게임 상태 복원
+// Firebase 방식 (#c=5반&t=1팀)
+if(classFromHash && teamFromHash){
+  state.selectedClass = decodeURIComponent(classFromHash);
+  const teamName = decodeURIComponent(teamFromHash);
+
+  if(window.db && window.firebase){
+    const gameRef = window.firebase.ref(window.db, `games/${state.selectedClass}`);
+
+    window.firebase.onValue(gameRef, (snap)=>{
+      const data = snap.val();
+      if(!data) return;
+
+      Object.assign(state, data);
+      state.joined = state.joined || {};
+      state.joined[teamName] = true;
+
+      window.firebase.update(
+        window.firebase.ref(window.db, `games/${state.selectedClass}/joined`),
+        { [teamName]: true }
+      );
+
+      updateHeader();
+      renderStudent(teamName);
+      show('student');
+    });
+  }
+}
+// 예전 QR 방식 (#t=1팀&d=...)
+else if(teamFromHash && dataFromHash){
   const ok = decodeState(dataFromHash);
   if(ok){
     const teamName = decodeURIComponent(teamFromHash);
-    // 접속 기록을 localStorage에 남기기 (선생님 화면 갱신용)
     const lsRaw = localStorage.getItem(lsKey());
     const lsData = lsRaw ? JSON.parse(lsRaw) : {};
     if(!lsData.joined) lsData.joined={};
@@ -706,8 +733,11 @@ if(teamFromHash && dataFromHash){
     show('select');
   }
 } else {
-  // 선생님 컴퓨터
-  loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+  loadLS();
+  updateHeader();
+  renderTeamPreview();
+  renderHost();
+  renderResult();
   show('select');
 }
 </script>
