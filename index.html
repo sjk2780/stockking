@@ -150,12 +150,12 @@
         <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
           <div>
             <h2 class="text-2xl md:text-3xl font-black">사회자 화면</h2>
-            <p class="text-slate-300 text-sm mt-1">라운드 시작 → 뉴스 공개 → 라운드 종료 → 다음날 주가 확인</p>
+            <p class="text-slate-300 text-sm mt-1">라운드 시작(거래 진행) → 라운드 종료(거래 중지) → 다음날 주가 반영</p>
           </div>
           <div class="flex gap-2 flex-wrap">
-            <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">라운드 시작 (뉴스 공개)</button>
-            <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">라운드 종료 (거래 중지)</button>
-            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">다음날 주가 반영</button>
+            <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">▶ 라운드 시작 (거래 진행)</button>
+            <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">⏸ 라운드 종료 (거래 중지)</button>
+            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">🎲 다음날 주가 변동</button>
             <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기</button>
           </div>
         </div>
@@ -169,7 +169,7 @@
             <div id="hostRound" class="text-2xl font-black">1라운드</div>
           </div>
           <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
-            <div class="text-xs text-slate-400 mb-1">상태</div>
+            <div class="text-xs text-slate-400 mb-1">시장 상태</div>
             <div id="hostStatus" class="text-2xl font-black text-emerald-300">대기</div>
           </div>
         </div>
@@ -183,8 +183,8 @@
           </div>
           <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xl font-black">주식 현황</h3>
-              <span class="text-xs text-slate-400">실시간 기준가</span>
+              <h3 class="text-xl font-black">실시간 주식 현황</h3>
+              <span class="text-xs text-slate-400">기준가 반영 현황</span>
             </div>
             <div id="chartArea" class="space-y-2 ms max-h-96 overflow-auto"></div>
           </div>
@@ -200,8 +200,8 @@
             <span id="stuTeamBadge" class="px-3 py-1 rounded-full bg-cyan-400/20 text-cyan-300 font-black text-sm">1팀</span>
           </div>
           <div class="flex items-center gap-2">
-            <span id="stuStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400">거래 중지</span>
-            <button id="btnStuRefresh" class="btn px-3 py-1.5 rounded-xl bg-white/10 font-bold text-xs">🔄 갱신</button>
+            <span id="stuMarketBadge" class="px-2.5 py-1 rounded-full font-black text-xs bg-rose-500/20 text-rose-400">시장 닫힘</span>
+            <button id="btnStuRefresh" class="btn px-3 py-1.5 rounded-xl bg-white/10 font-bold text-xs">🔄 새로고침</button>
           </div>
         </div>
       </div>
@@ -217,8 +217,8 @@
       </div>
 
       <div id="stuGame" style="display:none">
-        <div id="stuLockNotice" class="hidden mb-4 p-3 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-center text-sm font-black text-rose-300">
-          🔒 이번 라운드 거래가 종료되었습니다. 마켓이 잠겼습니다!
+        <div id="stuMarketNotice" class="mb-4 p-3 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-center text-sm font-black text-rose-300 hidden">
+          🔒 지금은 거래 시간이 아닙니다. 시장이 열릴 때까지 기다려주세요!
         </div>
         <div class="grid grid-cols-3 gap-3 mb-4">
           <div class="glass rounded-2xl p-4">
@@ -243,15 +243,12 @@
 
     <section id="screen-result" class="screen">
       <div class="glass rounded-3xl p-5 md:p-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+        <div class="flex items-center justify-between gap-3 mb-5">
           <div>
             <h2 id="resultTitle" class="text-2xl md:text-3xl font-black">라운드 결과</h2>
-            <p id="resultDesc" class="text-slate-300 text-sm mt-1">현재 라운드 종료 시점의 순위와 평가금입니다.</p>
+            <p id="resultDesc" class="text-slate-300 text-sm mt-1">팀별 실시간 자산 순위와 평가금입니다.</p>
           </div>
-          <div class="flex gap-2">
-            <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 사회자 화면</button>
-            <button id="btnResultNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">바로 다음날 주가 반영 ⚡</button>
-          </div>
+          <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 사회자 화면</button>
         </div>
         <div id="resultArea" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
       </div>
@@ -289,7 +286,7 @@ const db = firebase.database();
 function dbRef(cls){ return db.ref(`games/class_${cls||state.selectedClass}`); }
 
 /* ══════════════════════════════════════
-   상수 및 기본 데이터
+   상수
 ══════════════════════════════════════ */
 const STOCKS = [
   {name:'구갈반도체',sector:'반도체',price:12000},
@@ -317,24 +314,35 @@ const NEWS_POOL = [
   {stock:'용인스포츠',title:'국제 대회 후원 계약',effect:0.1,text:'용인스포츠가 국제 대회 후원 계약을 따냈습니다.'}
 ];
 
+/* ══════════════════════════════════════
+   상태
+══════════════════════════════════════ */
 const state = {
-  selectedClass:'5', teams:[], round:1, started:false, status:'ready',
+  selectedClass:'5', teams:[], round:1, started:false, status:'ready', // status: 'ready'(대기), 'trading'(거래진행), 'locked'(거래종료)
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
 };
 function resetPrices(){ state.prices=Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
 resetPrices();
 
 let myTeamName = null;
-let dbListener = null;
+let dbListener = null; 
+let isHost = true; // 사회자 여부 체크
 
 /* ══════════════════════════════════════
-   데이터 동기화
+   Firebase 저장 / 리스너 연동 (★롤백 현상 해결의 핵심)
 ══════════════════════════════════════ */
 function saveToFirebase(){
   const data = {
-    selectedClass: state.selectedClass, teams: state.teams, round: state.round,
-    started: state.started, status: state.status, currentNews: state.currentNews,
-    prices: state.prices, cash: state.cash, holdings: state.holdings, joined: state.joined
+    selectedClass: state.selectedClass,
+    teams: state.teams,
+    round: state.round,
+    started: state.started,
+    status: state.status,
+    currentNews: state.currentNews,
+    prices: state.prices,
+    cash: state.cash,
+    holdings: state.holdings,
+    joined: state.joined
   };
   dbRef().set(data);
 }
@@ -346,6 +354,32 @@ function loadFromFirebase(callback){
   });
 }
 
+// 사회자용 실시간 리스너 (학생들의 매매로 변하는 현금/보유주식을 실시간 반영하여 사회자가 종료 시 덮어쓰는 것 방지)
+function startHostListener(){
+  if(dbListener) dbRef(state.selectedClass).off('value', dbListener);
+  dbListener = dbRef(state.selectedClass).on('value', snap=>{
+    if(!snap.exists() || !isHost) return;
+    const d = snap.val();
+    // 데이터 동기화
+    state.round = d.round ?? state.round;
+    state.started = d.started ?? state.started;
+    state.status = d.status ?? state.status;
+    state.currentNews = d.currentNews ?? [];
+    state.prices = d.prices ?? state.prices;
+    state.cash = d.cash ?? state.cash;
+    state.holdings = d.holdings ?? state.holdings;
+    state.joined = d.joined ?? state.joined;
+    state.teams = d.teams ?? state.teams;
+    
+    // UI 업데이트
+    updateHeader();
+    _drawLobby();
+    renderHost();
+    renderResult();
+  });
+}
+
+// 학생용 실시간 리스너
 function startStudentListener(teamName){
   if(dbListener) dbRef(state.selectedClass).off('value', dbListener);
   dbListener = dbRef(state.selectedClass).on('value', snap=>{
@@ -356,7 +390,7 @@ function startStudentListener(teamName){
 }
 
 /* ══════════════════════════════════════
-   비즈니스 유틸 로직
+   유틸
 ══════════════════════════════════════ */
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
 function assignTeams(students){
@@ -386,7 +420,7 @@ function demoStudents(){
 }
 
 /* ══════════════════════════════════════
-   화면 및 UI 랜더링
+   화면 전환 및 랜더링
 ══════════════════════════════════════ */
 const SCREENS=['select','roster','lobby','host','student','result'];
 function show(id){
@@ -435,6 +469,7 @@ function _drawLobby(){
   document.getElementById('joinedCount').textContent=cnt;
 
   const grid=document.getElementById('qrGrid');
+  if(!grid) return;
   grid.innerHTML='';
   state.teams.forEach(t=>{
     const url=teamUrl(t.name);
@@ -454,7 +489,7 @@ function _drawLobby(){
     thumb.onclick=()=>{
       document.getElementById('qrModalLabel').textContent=`${t.name} QR`;
       makeQR(document.getElementById('qrModalCanvas'),url,240);
-      document.getElementById('qrModal').classList.remove('hidden').style.display='flex';
+      document.getElementById('qrModal').classList.remove('hidden');
     };
   });
 
@@ -473,19 +508,19 @@ function renderHost(){
   document.getElementById('hostClass').textContent=`${state.selectedClass}반`;
   document.getElementById('hostRound').textContent=`${state.round}라운드`;
   
-  let statusText = '대기중';
-  if(state.status==='trading') statusText = '🔴 실시간 거래 중';
-  if(state.status==='locked') statusText = '🔒 거래 종료 (마켓 마감)';
-  document.getElementById('hostStatus').textContent=statusText;
+  let statusHTML = '대기중';
+  if(state.status === 'trading') statusHTML = '<span class="text-emerald-400 animate-pulse">🟢 거래 진행 중</span>';
+  if(state.status === 'locked') statusHTML = '<span class="text-rose-400">🔒 거래 마감 (정산중)</span>';
+  document.getElementById('hostStatus').innerHTML=statusHTML;
 
   document.getElementById('newsArea').innerHTML=state.currentNews.length
     ?state.currentNews.map(n=>`
         <div class="p-4 rounded-2xl bg-black/20 border border-white/10 border-l-4 border-l-cyan-400">
-          <div class="font-black text-cyan-300 text-base">${n.title}</div>
-          <div class="text-sm text-slate-200 mt-1">${n.text}</div>
-          <div class="text-xs text-slate-400 mt-1.5 font-bold">🎯 타겟 종목: ${n.stock} (${n.effect > 0 ? '+' : ''}${n.effect*100}%)</div>
+          <div class="font-black text-cyan-300">${n.title}</div>
+          <div class="text-sm text-slate-300 mt-1">${n.text}</div>
+          <div class="text-xs text-slate-500 mt-1">관련 종목: ${n.stock} (${n.effect > 0 ? '+' : ''}${n.effect*100}%)</div>
         </div>`).join('')
-    :`<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 새로운 뉴스가 발행됩니다.</div>`;
+    :`<div class="p-4 rounded-2xl bg-black/20 text-slate-400 text-sm">"라운드 시작" 버튼을 누르면 뉴스가 공개됩니다.</div>`;
 
   document.getElementById('chartArea').innerHTML=STOCKS.map(s=>{
     const p=state.prices[s.name]??s.price;
@@ -499,11 +534,10 @@ function renderHost(){
         </div>
       </div>`;
   }).join('');
-  updateHeader();
 }
 
 /* ══════════════════════════════════════
-   🔥 완전히 새로 작성된 안정화 학생 UI 로직 🔥
+   학생 화면 및 안전 트랜잭션 매매 로직
 ══════════════════════════════════════ */
 function renderStudentUI(teamName){
   document.getElementById('stuTeamBadge').textContent=teamName;
@@ -518,21 +552,19 @@ function renderStudentUI(teamName){
   document.getElementById('stuWaiting').style.display='none';
   document.getElementById('stuGame').style.display='';
   document.getElementById('stuTeam').textContent=teamName;
-  
-  const currentCash = state.cash[teamName] ?? 100000;
-  document.getElementById('stuCash').textContent=`${currentCash.toLocaleString()}원`;
+  document.getElementById('stuCash').textContent=`${(state.cash[teamName]??100000).toLocaleString()}원`;
   document.getElementById('stuAsset').textContent=`${teamAsset(teamName).total.toLocaleString()}원`;
 
-  const isLocked = (state.status === 'locked');
-  const badge = document.getElementById('stuStatusBadge');
-  const notice = document.getElementById('stuLockNotice');
+  const isClosed = state.status !== 'trading';
+  const badge = document.getElementById('stuMarketBadge');
+  const notice = document.getElementById('stuMarketNotice');
 
-  if(isLocked) {
-    badge.className = "px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400";
-    badge.textContent = "거래 마감";
+  if(isClosed){
+    badge.className = "px-2.5 py-1 rounded-full font-black text-xs bg-rose-500/20 text-rose-400";
+    badge.textContent = "시장 닫힘";
     notice.classList.remove('hidden');
   } else {
-    badge.className = "px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400";
+    badge.className = "px-2.5 py-1 rounded-full font-black text-xs bg-emerald-500/20 text-emerald-400";
     badge.textContent = "시장 열림";
     notice.classList.add('hidden');
   }
@@ -541,8 +573,7 @@ function renderStudentUI(teamName){
   area.innerHTML=STOCKS.map(s=>{
     const price=Math.round(state.prices[s.name]||s.price);
     const qty=state.holdings[teamName]?.[s.name]||0;
-    const disabledAttr = isLocked ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : '';
-    
+    const disabledAttr = isClosed ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : '';
     return `
       <div class="p-4 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
@@ -556,97 +587,90 @@ function renderStudentUI(teamName){
       </div>`;
   }).join('');
 
-  if(isLocked) return;
+  if(isClosed) return; // 시장이 닫혀있으면 이벤트 바인딩 안 함
 
-  // 매수 실행 (상위 노드 통합 트랜잭션 적용 - 절대 롤백 불가능)
+  // 매수 버튼 클릭 (Firebase 원자적 트랜잭션 적용)
   document.querySelectorAll('.buyBtn').forEach(btn=>{
     btn.onclick=()=>{
       const stock=btn.dataset.s;
       const price=Math.round(state.prices[stock]||0);
-      
-      // 개별 속성이 아닌 팀의 통합 자산 데이터 전체를 단 하나의 트랜잭션으로 원자적 결합 계산
-      dbRef().child(`cash`).parent.transaction(gameData => {
-        if (!gameData) return gameData;
-        
-        const cash = gameData.cash?.[teamName] ?? 100000;
-        if (cash < price) {
-          alert('현금이 부족하여 매수할 수 없습니다!');
-          return; // 변동 없음 취소
-        }
-        
-        if (!gameData.cash) gameData.cash = {};
-        if (!gameData.holdings) gameData.holdings = {};
-        if (!gameData.holdings[teamName]) gameData.holdings[teamName] = {};
-        
-        // 돈 빼고 주식 더하는 가공을 한 호흡에 처리
-        gameData.cash[teamName] = cash - price;
-        gameData.holdings[teamName][stock] = (gameData.holdings[teamName][stock] || 0) + 1;
-        
-        return gameData;
+
+      dbRef().child('cash').parent.transaction(currentData => {
+        if (!currentData) return currentData;
+        if (currentData.status !== 'trading') { alert('시장이 닫혔습니다!'); return; }
+
+        const userCash = currentData.cash?.[teamName] ?? 100000;
+        if (userCash < price) { alert('현금이 부족합니다!'); return; }
+
+        if(!currentData.cash) currentData.cash = {};
+        if(!currentData.holdings) currentData.holdings = {};
+        if(!currentData.holdings[teamName]) currentData.holdings[teamName] = {};
+
+        currentData.cash[teamName] = userCash - price;
+        currentData.holdings[teamName][stock] = (currentData.holdings[teamName][stock] || 0) + 1;
+
+        return currentData;
       });
     };
   });
 
-  // 매도 실행
+  // 매도 버튼 클릭
   document.querySelectorAll('.sellBtn').forEach(btn=>{
     btn.onclick=()=>{
       const stock=btn.dataset.s;
       const price=Math.round(state.prices[stock]||0);
 
-      dbRef().child(`cash`).parent.transaction(gameData => {
-        if (!gameData) return gameData;
-        
-        const qty = gameData.holdings?.[teamName]?.[stock] || 0;
-        if (qty <= 0) {
-          alert('보유하고 있는 주식이 없습니다!');
-          return;
-        }
-        
-        if (!gameData.cash) gameData.cash = {};
-        const cash = gameData.cash[teamName] ?? 100000;
-        
-        gameData.holdings[teamName][stock] = qty - 1;
-        gameData.cash[teamName] = cash + price;
-        
-        return gameData;
+      dbRef().child('cash').parent.transaction(currentData => {
+        if (!currentData) return currentData;
+        if (currentData.status !== 'trading') { alert('시장이 닫혔습니다!'); return; }
+
+        const userQty = currentData.holdings?.[teamName]?.[stock] || 0;
+        if (userQty <= 0) { alert('보유 주식이 없습니다!'); return; }
+
+        if(!currentData.cash) currentData.cash = {};
+        const userCash = currentData.cash[teamName] ?? 100000;
+
+        currentData.holdings[teamName][stock] = userQty - 1;
+        currentData.cash[teamName] = userCash + price;
+
+        return currentData;
       });
     };
   });
 }
 
 /* ══════════════════════════════════════
-   결과 및 정산 화면
+   결과 화면
 ══════════════════════════════════════ */
-function renderResult(isPostStockMarket = false){
+function renderResult(){
   const box=document.getElementById('resultArea');
-  if(!state.teams.length){ box.innerHTML=`<div class="p-4 text-slate-400">결과 데이터가 존재하지 않습니다.</div>`; return; }
+  if(!state.teams.length){ box.innerHTML=`<div class="p-4 text-slate-400">결과 없음</div>`; return; }
   
-  if(isPostStockMarket) {
-    document.getElementById('resultTitle').textContent = `📈 다음날 주가 변동 결과 (${state.round - 1}R 변동 정산)`;
-    document.getElementById('resultDesc').textContent = "호재/악재 뉴스가 주가에 최종 반영된 새로운 총 자산 가치와 순위입니다!";
+  if(state.status === 'locked') {
+    document.getElementById('resultTitle').textContent = `🔒 ${state.round}라운드 거래 마감 현황`;
+    document.getElementById('resultDesc').textContent = "시장이 동결되었습니다. '다음날 주가 변동'을 클릭하면 뉴스가 주가에 반영됩니다.";
   } else {
-    document.getElementById('resultTitle').textContent = `🔒 거래 마감 정산 현황 (${state.round}R 중간 평가)`;
-    document.getElementById('resultDesc').textContent = "시장이 동결되었습니다. 다음날 주가 반영 버튼을 누르면 순위가 격변합니다.";
+    document.getElementById('resultTitle').textContent = `📊 실시간 중간 정산 결과`;
+    document.getElementById('resultDesc').textContent = "현재 변동된 주가 기준 팀별 순위입니다.";
   }
 
   const sorted=[...state.teams].sort((a,b)=>teamAsset(b.name).total-teamAsset(a.name).total);
   const medals=['🥇 1위','🥈 2위','🥉 3위','4위','5위','6위'];
   const colors=['text-yellow-300','text-slate-300','text-amber-600','text-slate-400','text-slate-400','text-slate-400'];
-  
   box.innerHTML=sorted.map((t,i)=>{
     const a=teamAsset(t.name);
     return `
-      <div class="p-4 rounded-3xl bg-black/20 border border-white/10 relative overflow-hidden">
+      <div class="p-4 rounded-3xl bg-black/20 border border-white/10">
         <div class="flex items-center justify-between mb-3">
-          <div class="font-black text-xl text-white">${t.name}</div>
+          <div class="font-black text-xl">${t.name}</div>
           <div class="font-black ${colors[i]} text-sm bg-white/5 px-2.5 py-1 rounded-xl">${medals[i]}</div>
         </div>
         <div class="space-y-1 text-sm text-slate-300">
-          <div>보유 현금: <span class="font-bold text-slate-100">${a.cash.toLocaleString()}원</span></div>
-          <div class="truncate">보유 주식: <span class="font-bold text-cyan-300 text-xs">${Object.entries(state.holdings[t.name]||{}).filter(([,q])=>q>0).map(([n,q])=>`${n}(${q}주)`).join(', ')||'없음'}</span></div>
+          <div>현금: <span class="font-bold text-white">${a.cash.toLocaleString()}원</span></div>
+          <div class="truncate">주식: <span class="font-bold text-cyan-300 text-xs">${Object.entries(state.holdings[t.name]||{}).filter(([,q])=>q>0).map(([n,q])=>`${n}(${q}주)`).join(', ')||'없음'}</span></div>
         </div>
         <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-          <span class="text-slate-400 text-xs">총 자산 평가금</span>
+          <span class="text-slate-400 text-sm">총 평가금</span>
           <span class="font-black text-emerald-400 text-xl">${a.total.toLocaleString()}원</span>
         </div>
       </div>`;
@@ -654,37 +678,29 @@ function renderResult(isPostStockMarket = false){
 }
 
 /* ══════════════════════════════════════
-   주가 변동 알고리즘
+   뉴스 / 주가 변동 알고리즘
 ══════════════════════════════════════ */
-function randomNews(){ 
-  state.currentNews=shuffle(NEWS_POOL).slice(0,4); 
-  renderHost(); 
-  saveToFirebase(); 
-}
+function randomNews(){ state.currentNews=shuffle(NEWS_POOL).slice(0,4); renderHost(); saveToFirebase(); }
 
 function applyDayChange(){
-  // 1. 뉴스 효과 반영
+  // 호재/악재 뉴스 주가 반영
   state.currentNews.forEach(n=>{
     const base=STOCKS.find(s=>s.name===n.stock); if(!base) return;
     const cur=state.prices[n.stock]||base.price;
     state.prices[n.stock]=Math.max(1000,Math.round(cur*(1+n.effect+(Math.random()*.04-.02))));
   });
-  // 2. 일반 자연 변동성 반영
+  // 일반 자연 변동
   STOCKS.forEach(s=>{
     if(!state.currentNews.some(n=>n.stock===s.name)){
       const cur=state.prices[s.name]||s.price;
       state.prices[s.name]=Math.max(1000,Math.round(cur*(1+(Math.random()*.08-.04))));
     }
   });
-  
   state.round++;
-  state.status = 'ready';
+  state.status = 'ready'; // 대기 상태로 변경
   state.currentNews = [];
-  
   saveToFirebase();
   renderHost();
-  renderResult(true); 
-  show('result');
 }
 
 /* ══════════════════════════════════════
@@ -695,7 +711,7 @@ document.querySelectorAll('.classBtn').forEach(btn=>{
     document.querySelectorAll('.classBtn').forEach(b=>{b.classList.remove('bg-yellow-400','text-slate-950');b.classList.add('bg-white/10');});
     btn.classList.add('bg-yellow-400','text-slate-950'); btn.classList.remove('bg-white/10');
     state.selectedClass=btn.dataset.class;
-    loadFromFirebase(()=>{ updateHeader(); renderTeamPreview(); renderHost(); renderResult(); });
+    loadFromFirebase(()=>{ updateHeader(); renderTeamPreview(); renderHost(); renderResult(); startHostListener(); });
   });
 });
 
@@ -704,6 +720,7 @@ document.getElementById('btnEnterClass').onclick=()=>{
   document.getElementById('rosterLabel').textContent=`${state.selectedClass}반`;
   renderTeamPreview();
 };
+document.getElementById('btnBackSelect').onclick=()=>show('select');
 document.getElementById('btnLoadDemo').onclick=()=>{ document.getElementById('studentInput').value=demoStudents().join('\n'); };
 
 document.getElementById('btnAssign').onclick=()=>{
@@ -726,44 +743,41 @@ document.getElementById('btnStartGame').onclick=()=>{
   state.started=true; state.round=1; state.status='ready';
   saveToFirebase();
   renderHost(); renderResult(); show('host');
+  alert('게임이 시작되었습니다! 학생들 화면이 자동으로 바뀝니다.');
 };
 
 document.getElementById('btnRoundStart').onclick=()=>{
-  if(!state.started) return alert('먼저 게임 시작 버튼을 클릭해 주세요.');
-  state.status = 'trading';
+  if(!state.started) return alert('먼저 게임 시작을 눌러주세요.');
+  state.status = 'trading'; // 거래 활성화
   randomNews(); 
+  alert(`📢 라운드 ${state.round} 마켓이 열렸습니다! 학생들이 거래를 시작할 수 있습니다.`);
 };
-
 document.getElementById('btnShuffleNews').onclick=randomNews;
 
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.status = 'locked'; 
+  state.status = 'locked'; // 거래 잠금
   saveToFirebase(); 
-  renderResult(false); 
+  renderResult(); 
   show('result');
+  alert('🔒 라운드 거래가 종료되었습니다. 학생들의 화면이 동결됩니다.');
 };
 
 document.getElementById('btnNextDay').onclick=()=>{ 
-  if(confirm('다음날 주가를 시뮬레이션하고 자산을 정산하겠습니까?')) {
+  if(confirm('다음날 주가 변동을 시뮬레이션하고 정산하시겠습니까?')) {
     applyDayChange(); 
+    show('host'); 
+    alert('🎲 주가 변동 정산이 완료되었습니다! 다음 라운드를 시작하세요.');
   }
 };
-document.getElementById('btnResultNextDay').onclick=()=> {
-  applyDayChange();
-};
-
-document.getElementById('btnBackHost').onclick=()=> {
-  renderHost();
-  show('host');
-};
+document.getElementById('btnBackHost').onclick=()=>show('host');
 
 document.getElementById('btnStuRefresh').onclick=()=>{
   if(myTeamName) loadFromFirebase(()=>renderStudentUI(myTeamName));
 };
 
-document.getElementById('btnSave').onclick=()=>{ saveToFirebase(); alert('서버에 저장되었습니다.'); };
+document.getElementById('btnSave').onclick=()=>{ saveToFirebase(); alert('저장되었습니다.'); };
 document.getElementById('btnReset').onclick=()=>{
-  if(!confirm('현재 반의 모든 주식 데이터베이스 기록을 초기화할까요?')) return;
+  if(!confirm('현재 반 데이터를 초기화할까요?')) return;
   dbRef().remove().then(()=>location.reload());
 };
 
@@ -771,13 +785,14 @@ document.getElementById('btnCloseModal').onclick=closeModal;
 function closeModal(){ document.getElementById('qrModal').classList.add('hidden'); }
 
 /* ══════════════════════════════════════
-   초기화 라우팅
+   초기 진입 처리
 ══════════════════════════════════════ */
 const urlParams = new URLSearchParams(location.search);
 const classParam = urlParams.get('c');
 const teamParam  = urlParams.get('t');
 
 if(classParam && teamParam){
+  isHost = false; // 학생으로 접속
   myTeamName = decodeURIComponent(teamParam);
   state.selectedClass = classParam;
 
@@ -788,9 +803,11 @@ if(classParam && teamParam){
     startStudentListener(myTeamName);
   });
 } else {
+  isHost = true; // 사회자로 접속
   loadFromFirebase(()=>{
     updateHeader(); renderTeamPreview(); renderHost(); renderResult();
     show('select');
+    startHostListener(); // 사회자 실시간 동기화 리스너 켜기
   });
 }
 </script>
