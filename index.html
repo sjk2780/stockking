@@ -307,6 +307,7 @@ const NEWS_POOL = [
 /* ─── 상태 ─── */
 const state = {
   selectedClass:'5', teams:[], round:1, started:false,
+  roundOpen:false,
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
 };
 function resetPrices(){ state.prices = Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
@@ -524,7 +525,7 @@ function renderStudent(teamName){
   document.getElementById('stuAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
 
   const area = document.getElementById('tradeArea');
-  if(!state.started){
+  if(!state.roundOpen){
     area.innerHTML=`<div class="p-5 rounded-2xl bg-black/20 text-slate-400 text-sm text-center">⏳ 선생님이 라운드를 시작할 때까지 기다려주세요.<br><span class="text-xs mt-1 block">새로고침 버튼을 누르면 상태가 갱신됩니다.</span></div>`;
     return;
   }
@@ -644,18 +645,21 @@ document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
 
 document.getElementById('btnStartGame').onclick=()=>{
   if(!state.teams.length) return alert('먼저 팀 배정을 해주세요.');
-  state.started=true; state.round=1;
+  state.started=true;
+  state.roundOpen=false; state.round=1;
   renderHost(); renderResult(); show('host'); save();
   alert('게임이 시작되었습니다!');
 };
 
 document.getElementById('btnRoundStart').onclick=()=>{
   if(!state.started) return alert('먼저 게임 시작을 눌러주세요.');
+  state.roundOpen=true;
+  save();
   randomNews(); alert(`라운드 ${state.round} 시작! 뉴스를 읽어주세요.`);
 };
 document.getElementById('btnShuffleNews').onclick=randomNews;
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.started=false; renderResult(); show('result'); save();
+  state.roundOpen=false; renderResult(); show('result'); save();
   alert('라운드 종료! 학생들은 매수/매도 불가합니다.');
 };
 document.getElementById('btnNextDay').onclick=()=>{ applyDayChange(); show('host'); alert('다음날 주가 변동이 반영되었습니다.'); };
