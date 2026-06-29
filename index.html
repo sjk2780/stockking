@@ -201,29 +201,51 @@
 
     <!-- ⑤ 학생 태블릿 화면 -->
     <section id="screen-student" class="screen">
-      <div class="glass rounded-3xl p-5 md:p-8">
-        <div class="flex items-center justify-between gap-3 mb-5">
-          <div>
-            <h2 class="text-2xl md:text-3xl font-black">학생 화면</h2>
-            <p class="text-slate-300 text-sm mt-1">팀원들과 상의 후 매수/매도를 결정하세요.</p>
+      <!-- 헤더바 -->
+      <div class="glass rounded-3xl p-4 mb-4 glow">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-900 font-black text-xs">구갈중 주식왕</span>
+            <span id="stuTeamBadge" class="px-3 py-1 rounded-full bg-cyan-400/20 text-cyan-300 font-black text-sm">1팀</span>
           </div>
-          <button id="btnStuRefresh" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">🔄 새로고침</button>
+          <button id="btnStuRefresh" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold text-sm">🔄 새로고침</button>
         </div>
-        <div class="grid grid-cols-3 gap-3 mb-5">
-          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+      </div>
+
+      <!-- 대기 화면 (게임 시작 전) -->
+      <div id="stuWaiting" class="glass rounded-3xl p-8 text-center" style="display:none">
+        <div class="text-7xl mb-5">⏳</div>
+        <h2 class="text-2xl font-black mb-2">선생님을 기다리는 중...</h2>
+        <p class="text-slate-300 text-sm mb-6">선생님이 게임을 시작하면 주식 거래 화면이 나타납니다.</p>
+        <div class="p-4 rounded-2xl bg-white/6 border border-white/10 mb-5">
+          <div class="text-xs text-slate-400 mb-1">내 팀</div>
+          <div id="stuTeamWait" class="text-4xl font-black text-cyan-300">1팀</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-yellow-400/10 border border-yellow-400/30 text-sm text-yellow-300 font-bold">
+          선생님이 "게임 시작"을 누른 뒤<br>🔄 새로고침 버튼을 눌러주세요!
+        </div>
+      </div>
+
+      <!-- 거래 화면 (게임 시작 후) -->
+      <div id="stuGame" style="display:none">
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="glass rounded-2xl p-4">
             <div class="text-xs text-slate-400 mb-1">내 팀</div>
-            <div id="stuTeam" class="text-2xl font-black text-cyan-300">1팀</div>
+            <div id="stuTeam" class="text-xl font-black text-cyan-300">1팀</div>
           </div>
-          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+          <div class="glass rounded-2xl p-4">
             <div class="text-xs text-slate-400 mb-1">보유 현금</div>
-            <div id="stuCash" class="text-2xl font-black">100,000원</div>
+            <div id="stuCash" class="text-xl font-black">100,000원</div>
           </div>
-          <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
+          <div class="glass rounded-2xl p-4">
             <div class="text-xs text-slate-400 mb-1">총 평가금</div>
-            <div id="stuAsset" class="text-2xl font-black text-emerald-300">100,000원</div>
+            <div id="stuAsset" class="text-xl font-black text-emerald-300">100,000원</div>
           </div>
         </div>
-        <div id="tradeArea" class="space-y-3 ms max-h-[36rem] overflow-auto"></div>
+        <div class="glass rounded-3xl p-4">
+          <h3 class="font-black text-lg mb-3">📈 주식 매수 / 매도</h3>
+          <div id="tradeArea" class="space-y-3 ms max-h-[60vh] overflow-auto"></div>
+        </div>
       </div>
     </section>
 
@@ -377,7 +399,17 @@ function demoStudents(){
 
 /* ─── 화면 전환 ─── */
 const SCREENS = ['select','roster','lobby','host','student','result'];
-function show(id){ SCREENS.forEach(n=>document.getElementById(`screen-${n}`).classList.toggle('active',n===id)); }
+function show(id){
+  SCREENS.forEach(n=>document.getElementById(`screen-${n}`).classList.toggle('active',n===id));
+  // 학생 화면은 헤더 숨기고 최상단 스크롤
+  const header = document.querySelector('header');
+  if(id === 'student'){
+    header.style.display = 'none';
+    window.scrollTo(0,0);
+  } else {
+    header.style.display = '';
+  }
+}
 
 /* ─── 헤더 ─── */
 function updateHeader(){
@@ -499,15 +531,25 @@ function renderHost(){
 
 /* ─── 학생 화면 ─── */
 function renderStudent(teamName){
+  // 헤더 배지
+  document.getElementById('stuTeamBadge').textContent = teamName;
+
+  if(!state.started){
+    // 대기 화면
+    document.getElementById('stuWaiting').style.display = '';
+    document.getElementById('stuGame').style.display = 'none';
+    document.getElementById('stuTeamWait').textContent = teamName;
+    return;
+  }
+
+  // 거래 화면
+  document.getElementById('stuWaiting').style.display = 'none';
+  document.getElementById('stuGame').style.display = '';
   document.getElementById('stuTeam').textContent = teamName;
   document.getElementById('stuCash').textContent = `${(state.cash[teamName]??100000).toLocaleString()}원`;
   document.getElementById('stuAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
 
   const area = document.getElementById('tradeArea');
-  if(!state.started){
-    area.innerHTML=`<div class="p-5 rounded-2xl bg-black/20 text-slate-400 text-sm text-center">⏳ 선생님이 라운드를 시작할 때까지 기다려주세요.<br><span class="text-xs mt-1 block">새로고침 버튼을 누르면 상태가 갱신됩니다.</span></div>`;
-    return;
-  }
   area.innerHTML = STOCKS.map(s=>{
     const price = Math.round(state.prices[s.name]||s.price);
     const qty = state.holdings[teamName]?.[s.name]||0;
@@ -537,7 +579,6 @@ function renderStudent(teamName){
         state.holdings[teamName][stock]-=1;
         state.cash[teamName]+=price;
       }
-      // 매수/매도 결과를 localStorage에 저장 → 선생님 화면에서 갱신 가능
       save();
       renderStudent(teamName);
     };
@@ -642,8 +683,17 @@ document.getElementById('btnNextDay').onclick=()=>{ applyDayChange(); show('host
 document.getElementById('btnBackHost').onclick=()=>show('host');
 
 document.getElementById('btnStuRefresh').onclick=()=>{
-  // 새로고침 시 URL 해시에서 최신 상태 다시 읽기
-  location.reload();
+  // URL 해시에서 최신 상태 다시 읽어서 렌더링
+  const hp = new URLSearchParams(location.hash.replace('#',''));
+  const tn = hp.get('t');
+  const dd = hp.get('d');
+  if(tn && dd){
+    decodeState(dd);
+    renderStudent(decodeURIComponent(tn));
+    show('student');
+  } else {
+    location.reload();
+  }
 };
 
 document.getElementById('btnSave').onclick=()=>{ save(); alert('저장되었습니다.'); };
