@@ -42,7 +42,9 @@
     .row-status.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
     .join-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;}
     @media(max-width:768px){.mhide{display:none!important}}
-  </style>
+  
+#qrModalUrl{display:none;}
+</style>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
@@ -463,8 +465,8 @@ function renderLobby(){
     makeQR(thumb, url, 80);
     thumb.onclick=()=>{
       document.getElementById('qrModalLabel').textContent=`${t.name} QR`;
-      document.getElementById('qrModalUrl').textContent=url;
-      makeQR(document.getElementById('qrModalCanvas'), url, 260);
+      document.getElementById('qrModalUrl').textContent='';
+      makeQR(document.getElementById('qrModalCanvas'), url, 340);
       document.getElementById('qrModal').classList.remove('hidden');
       document.getElementById('qrModal').classList.add('flex');
     };
