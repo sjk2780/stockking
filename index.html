@@ -381,9 +381,9 @@ const NEWS_POOL = [
   {stock:'심성전기',title:'⚡ 초고온 폭염으로 인한 전국 전력 예비율 급감 및 심성전기 차세대 변압기 주문 폭주',text:'전 세계적인 이상 기후 현상으로 여름철 전력 소모량이 역대 최고치를 경신했습니다. 전력 과부하를 막기 위한 심성전기의 고효율 전력 제어 부품 및 특수 기기 수요가 공장을 풀가동해도 모자랄 정도로 쏟아지며 실적 어닝 서프라이즈가 유력합니다.'},
   {stock:'에잇뱅크',title:'🏦 한국은행 기준 금리 깜짝 인하 단행으로 금융 마진 축소 우려 및 예적금 이탈 가속',text:'중앙은행의 전격적인 금리 인하 발표에 금융권이 요동치고 있습니다. 에잇뱅크를 비롯한 시중 대형 은행들의 순이자마진(NIM) 구조가 다소 약화될 가능성이 제기되었으며, 자산가들이 주식이나 부동산 시장으로 예금을 인출하는 현상이 목격됩니다.'},
   {stock:'슬램덩크엔터',title:'🎤 슬램덩크엔터 소속 5인조 신인 걸그룹, 미국 빌보드 메인 핫100 차트 1위 석권 돌풍',text:'엔터계의 대격변입니다. 슬램덩크엔터가 극비리에 데뷔시킨 글로벌 타겟 걸그룹이 전 세계 SNS 플랫폼을 점령하며 빌보드 정상에 올랐습니다. 굿즈 및 해외 콘서트 티켓이 전석 매진되며 부가가치 창출력이 상상을 초월할 전망입니다.'},
-  {stock:'심재권로켓랩',title:'🚀 심재권로켓랩, 독자 기술로 개발한 민간 우주정거장 보급용 '아리온 5호' 로켓 발사 성공',text:'우주 강국의 꿈이 실현되었습니다. 심재권로켓랩이 발사한 다목적 액체연료 로켓이 한 치의 오차도 없이 목표 궤도 진입 및 위성 분리에 완벽 성공했습니다. 이로써 글로벌 민간 우주항공 시장에서 독점적인 지위를 다질 기회를 거머쥐었습니다.'},
+  {stock:'심재권로켓랩',title:'🚀 심재권로켓랩, 독자 기술로 개발한 민간 우주정거장 보급용 아리온 5호 로켓 발사 성공',text:'우주 강국의 꿈이 실현되었습니다. 심재권로켓랩이 발사한 다목적 액체연료 로켓이 한 치의 오차도 없이 목표 궤도 진입 및 위성 분리에 완벽 성공했습니다. 이로써 글로벌 민간 우주항공 시장에서 독점적인 지위를 다질 기회를 거머쥐었습니다.'},
   {stock:'SIMAI솔루션',title:'🤖 SIMAI솔루션, 인간형 AI 비서 엔진 독점 상용화 및 글로벌 빅테크 제조사와 계약 조인',text:'인공지능 생태계의 판도를 바꿀 기술이 완성되었습니다. SIMAI솔루션의 대화형 추론 AI가 세계 최대 스마트폰 제조사의 메인 OS 기본 탑재 탑재 엔진으로 채택되며 전 세계 수억 대의 기기에서 로열티 매출이 대거 발생할 예정입니다.'},
-  {stock:'기흥바이오',title:'🧬 기흥바이오, 세계보건기구(WHO) 인증 난치성 면역 질환 혁신 신약 후보물질 임상 3상 최종 통과',text:'바이오 업계에 역사적인 날입니다. 기흥바이오가 수년간 수천억을 쏟아부어 개발해 온 신약이 임상시험에서 완벽한 효능และ 안전성을 입증받으며 시판 허가 단계에 진입했습니다. 글로벌 제약사로의 대규모 기술 수출 라이선스 아웃 계약이 임박했습니다.'}
+  {stock:'기흥바이오',title:'🧬 기흥바이오, 세계보건기구(WHO) 인증 난치성 면역 질환 혁신 신약 후보물질 임상 3상 최종 통과',text:'바이오 업계에 역사적인 날입니다. 기흥바이오가 수년간 수천억을 쏟아부어 개발해 온 신약이 임상시험에서 완벽한 효능과 안전성을 입증받으며 시판 허가 단계에 진입했습니다. 글로벌 제약사로의 대규모 기술 수출 라이선스 아웃 계약이 임박했습니다.'}
 ];
 
 const SECRET_POOL = [
@@ -871,4 +871,202 @@ function applyDayChange(){
     news.forEach(n => {
       const base = STOCKS.find(s => s.name === n.stock); if (!base) return;
       const cur = prices[n.stock] || base.price;
-      const isGood = n.title.
+      const isGood = n.title.includes('수주') || n.title.includes('성공') || n.title.includes('증설') || n.title.includes('돌풍') || n.title.includes('통과') || n.title.includes('폭염');
+      const bias = isGood ? 0.25 : -0.22; 
+      const randomWave = (Math.random() * 0.16) - 0.08; 
+      prices[n.stock] = Math.max(10000, Math.round(cur * (1 + bias + randomWave)));
+    });
+
+    if(secret) {
+      const cur = prices[secret.stock] || (STOCKS.find(s => s.name === secret.stock)?.price ?? 80000);
+      const isUp = secret.text.includes('폭등');
+      const bias = isUp ? 0.45 : -0.40; 
+      const randomWave = (Math.random() * 0.1) - 0.05;
+      prices[secret.stock] = Math.max(10000, Math.round(cur * (1 + bias + randomWave)));
+    }
+
+    STOCKS.forEach(s => {
+      const hasNews = news.some(n => n.stock === s.name) || (secret && secret.stock === s.name);
+      if (!hasNews) {
+        const cur = prices[s.name] || s.price;
+        const marketWave = (Math.random() * 0.24) - 0.12;
+        prices[s.name] = Math.max(10000, Math.round(cur * (1 + marketWave)));
+      }
+    });
+
+    currentData.prices = prices;
+    currentData.round = (currentData.round || 1) + 1;
+    currentData.status = 'ready'; 
+    currentData.currentNews = [];
+    currentData.currentSecretThisRound = null;
+    
+    if(currentData.secretNews) {
+      Object.keys(currentData.secretNews).forEach(k => currentData.secretNews[k] = "");
+    }
+
+    return currentData;
+  });
+}
+
+/* ══════════════════════════════════════
+   이벤트 연동 및 마스터 조절기 집행 코드
+══════════════════════════════════════ */
+document.getElementById('btnSendSecret').onclick = () => {
+  if(!state.currentSecretThisRound) {
+    return alert('현재 라운드가 시작되지 않았거나 활성화된 첩보가 없습니다.');
+  }
+  const selectedTeam = document.getElementById('targetTeamSelect').value;
+  
+  dbRef().child('secretNews').child(selectedTeam).set(state.currentSecretThisRound.text)
+    .then(() => {
+      alert(`🤫 [블라인드 배달 완료] 대형 화면 노출 없이, 오직 '${selectedTeam}' 스마트폰 화면으로 비밀 찌라시 정보가 전송되었습니다!`);
+    });
+};
+
+document.getElementById('btnApplyCashMod').onclick = () => {
+  const tTeam = document.getElementById('targetTeamSelect').value;
+  const modAmount = parseInt(document.getElementById('inputCashMod').value);
+  if(isNaN(modAmount)) return alert('변경할 액수 숫자를 입력하세요.');
+
+  dbRef().child('cash').child(tTeam).transaction(cur => {
+    return (cur ?? START_CASH) + modAmount;
+  }, (err, comm) => {
+    if(comm) {
+      alert(`💰 [자산 수정 완료] ${tTeam}의 현금을 수동으로 ${modAmount.toLocaleString()}원 조정하였습니다.`);
+      document.getElementById('inputCashMod').value = "";
+    }
+  });
+};
+
+document.getElementById('btnApplyStockMod').onclick = () => {
+  const tTeam = document.getElementById('targetTeamSelect').value;
+  const tStock = document.getElementById('stockSelectMod').value;
+  const modQty = parseInt(document.getElementById('inputStockMod').value);
+  if(isNaN(modQty)) return alert('변경할 주식 수량 숫자를 입력하세요.');
+
+  dbRef().child('holdings').child(tTeam).child(tStock).transaction(cur => {
+    return Math.max(0, (cur ?? 0) + modQty);
+  }, (err, comm) => {
+    if(comm) {
+      alert(`🔄 [주식 수량 조절 완료] ${tTeam}의 ${tStock} 수량을 수동으로 ${modQty}주 변경 적용했습니다.`);
+      document.getElementById('inputStockMod').value = "";
+    }
+  });
+};
+
+document.getElementById('btnCloseTvModal').onclick = () => {
+  document.getElementById('tvNewsModal').classList.add('hidden');
+};
+
+/* ══════════════════════════════════════
+   나머지 핵심 제어 바인딩
+══════════════════════════════════════ */
+const SCREENS=['select','roster','lobby','host','student','result'];
+
+document.querySelectorAll('.classBtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.classBtn').forEach(b=>{b.classList.remove('bg-yellow-400','text-slate-950');b.classList.add('bg-white/10');});
+    btn.classList.add('bg-yellow-400','text-slate-950'); btn.classList.remove('bg-white/10');
+    state.selectedClass=btn.dataset.class;
+    loadFromFirebase(()=>{ updateHeader(); renderTeamPreview(); renderHost(); renderResult(); startHostListener(); initHostModSelect(); });
+  });
+});
+
+document.getElementById('btnEnterClass').onclick=()=>{
+  show('roster');
+  document.getElementById('rosterLabel').textContent=`${state.selectedClass}반`;
+  renderTeamPreview();
+};
+document.getElementById('btnLoadDemo').onclick=()=>{ document.getElementById('studentInput').value=demoStudents().join('\n'); };
+
+document.getElementById('btnAssign').onclick=()=>{
+  const students=document.getElementById('studentInput').value.split('\n').map(v=>v.trim()).filter(Boolean);
+  if(!students.length) return alert('명단을 입력해주세요.');
+  state.teams=assignTeams(students);
+  initEconomy(); resetPrices(); state.round=1; state.started=false; state.status='ready'; state.currentNews=[];
+  renderTeamPreview();
+  document.getElementById('rosterNext').classList.remove('hidden');
+  saveToFirebase();
+};
+
+document.getElementById('btnGoLobby').onclick=()=>{ renderLobby(); show('lobby'); };
+document.getElementById('btnBackRoster').onclick=()=>show('roster');
+document.getElementById('btnToLobby').onclick=()=>{ renderLobby(); show('lobby'); };
+document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
+
+document.getElementById('btnStartGame').onclick=()=>{
+  if(!state.teams || !state.teams.length) return alert('먼저 팀 배정을 진행해주세요.');
+  state.started=true; state.round=1; state.status='ready';
+  saveToFirebase();
+  renderHost(); renderResult(); show('host');
+  alert('게임이 정상 시작되었습니다!');
+};
+
+document.getElementById('btnRoundStart').onclick=()=>{
+  if(!state.started) return alert('접속 대기 페이지에서 [게임 시작]을 먼저 눌러주세요.');
+  hostShuffleNewsAndStart();
+  alert(`📢 라운드가 활성화되었습니다! 학생들이 매매를 시작할 수 있습니다.`);
+};
+
+document.getElementById('btnShuffleNews').onclick=()=>{
+  const selectedNews = shuffle(NEWS_POOL).slice(0, 4);
+  dbRef().update({ currentNews: selectedNews });
+};
+
+document.getElementById('btnRoundEnd').onclick=()=>{
+  dbRef().update({ status: 'locked' });
+  show('result');
+  alert('🔒 라운드 거래가 종료되었습니다. 학생 화면이 동결되고 종합 순위판이 활성화됩니다.');
+};
+
+document.getElementById('btnNextDay').onclick=()=>{ 
+  if(confirm('밤사이 주가 시뮬레이션을 돌려 다음 라운드로 정산할까요?')) {
+    applyDayChange(); 
+    show('host'); 
+    alert('🎲 밤사이 주가 파동 정산 및 다음날 변동이 정상 완료되었습니다!');
+  }
+};
+document.getElementById('btnBackHost').onclick=()=>show('host');
+
+document.getElementById('btnStuRefresh').onclick=()=>{
+  if(myTeamName) loadFromFirebase(()=>renderStudentUI(myTeamName));
+};
+
+document.getElementById('btnReset').onclick=()=>{
+  if(!confirm('현재 반의 모든 데이터를 리셋 초기화할까요?')) return;
+  dbRef().remove().then(()=>location.reload());
+};
+
+document.getElementById('btnCloseModal').onclick=closeModal;
+function closeModal(){ document.getElementById('qrModal').classList.add('hidden'); }
+
+/* ══════════════════════════════════════
+   초기 진입 식별자 분기
+══════════════════════════════════════ */
+const urlParams = new URLSearchParams(location.search);
+const classParam = urlParams.get('c');
+const teamParam  = urlParams.get('t');
+
+if(classParam && teamParam){
+  isHost = false; 
+  myTeamName = decodeURIComponent(teamParam);
+  state.selectedClass = classParam;
+
+  loadFromFirebase(()=>{
+    db.ref(`games/class_${classParam}/joined/${myTeamName}`).set(true);
+    renderStudentUI(myTeamName);
+    show('student');
+    startStudentListener(myTeamName);
+  });
+} else {
+  isHost = true; 
+  loadFromFirebase(()=>{
+    updateHeader(); renderTeamPreview(); renderHost(); renderResult();
+    show('select');
+    startHostListener();
+    initHostModSelect();
+  });
+}
+</script>
+</body>
+</html>
