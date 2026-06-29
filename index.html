@@ -503,7 +503,7 @@ function renderHost(){
 }
 
 /* ══════════════════════════════════════
-   🛠️ 수정 보완: 매수/매도 실시간 즉각 반영 로직
+   🔥 완전히 새로 작성된 안정화 학생 UI 로직 🔥
 ══════════════════════════════════════ */
 function renderStudentUI(teamName){
   document.getElementById('stuTeamBadge').textContent=teamName;
@@ -519,7 +519,6 @@ function renderStudentUI(teamName){
   document.getElementById('stuGame').style.display='';
   document.getElementById('stuTeam').textContent=teamName;
   
-  // 무조건 현재 유저가 가진 현금과 주식 정보를 화면에 꽂아줌
   const currentCash = state.cash[teamName] ?? 100000;
   document.getElementById('stuCash').textContent=`${currentCash.toLocaleString()}원`;
   document.getElementById('stuAsset').textContent=`${teamAsset(teamName).total.toLocaleString()}원`;
@@ -557,25 +556,33 @@ function renderStudentUI(teamName){
       </div>`;
   }).join('');
 
-  if(isLocked) return; // 거래 종료 상태면 클릭 차단
+  if(isLocked) return;
 
-  // 매수 실행
+  // 매수 실행 (상위 노드 통합 트랜잭션 적용 - 절대 롤백 불가능)
   document.querySelectorAll('.buyBtn').forEach(btn=>{
     btn.onclick=()=>{
       const stock=btn.dataset.s;
       const price=Math.round(state.prices[stock]||0);
       
-      // 실시간 안전 업데이트를 위해 DB의 타겟 노드를 직접 증감
-      dbRef().child(`cash/${teamName}`).transaction(cash => {
-        if (cash === null) return 100000;
+      // 개별 속성이 아닌 팀의 통합 자산 데이터 전체를 단 하나의 트랜잭션으로 원자적 결합 계산
+      dbRef().child(`cash`).parent.transaction(gameData => {
+        if (!gameData) return gameData;
+        
+        const cash = gameData.cash?.[teamName] ?? 100000;
         if (cash < price) {
           alert('현금이 부족하여 매수할 수 없습니다!');
-          return;
+          return; // 변동 없음 취소
         }
         
-        // 돈이 있는 경우에만 주식 수량 +1
-        dbRef().child(`holdings/${teamName}/${stock}`).transaction(qty => (qty || 0) + 1);
-        return cash - price;
+        if (!gameData.cash) gameData.cash = {};
+        if (!gameData.holdings) gameData.holdings = {};
+        if (!gameData.holdings[teamName]) gameData.holdings[teamName] = {};
+        
+        // 돈 빼고 주식 더하는 가공을 한 호흡에 처리
+        gameData.cash[teamName] = cash - price;
+        gameData.holdings[teamName][stock] = (gameData.holdings[teamName][stock] || 0) + 1;
+        
+        return gameData;
       });
     };
   });
@@ -586,22 +593,29 @@ function renderStudentUI(teamName){
       const stock=btn.dataset.s;
       const price=Math.round(state.prices[stock]||0);
 
-      dbRef().child(`holdings/${teamName}/${stock}`).transaction(qty => {
-        if (!qty || qty <= 0) {
+      dbRef().child(`cash`).parent.transaction(gameData => {
+        if (!gameData) return gameData;
+        
+        const qty = gameData.holdings?.[teamName]?.[stock] || 0;
+        if (qty <= 0) {
           alert('보유하고 있는 주식이 없습니다!');
           return;
         }
         
-        // 주식이 확실히 있는 경우에만 현금 대금 +price
-        dbRef().child(`cash/${teamName}`).transaction(cash => (cash || 100000) + price);
-        return qty - 1;
+        if (!gameData.cash) gameData.cash = {};
+        const cash = gameData.cash[teamName] ?? 100000;
+        
+        gameData.holdings[teamName][stock] = qty - 1;
+        gameData.cash[teamName] = cash + price;
+        
+        return gameData;
       });
     };
   });
 }
 
 /* ══════════════════════════════════════
-   결과 화면
+   결과 및 정산 화면
 ══════════════════════════════════════ */
 function renderResult(isPostStockMarket = false){
   const box=document.getElementById('resultArea');
@@ -609,7 +623,7 @@ function renderResult(isPostStockMarket = false){
   
   if(isPostStockMarket) {
     document.getElementById('resultTitle').textContent = `📈 다음날 주가 변동 결과 (${state.round - 1}R 변동 정산)`;
-    document.getElementById('resultDesc').textContent = "호재/악재 뉴스가 주가에 반영되어 자산 순위가 최종 갱신되었습니다!";
+    document.getElementById('resultDesc').textContent = "호재/악재 뉴스가 주가에 최종 반영된 새로운 총 자산 가치와 순위입니다!";
   } else {
     document.getElementById('resultTitle').textContent = `🔒 거래 마감 정산 현황 (${state.round}R 중간 평가)`;
     document.getElementById('resultDesc').textContent = "시장이 동결되었습니다. 다음날 주가 반영 버튼을 누르면 순위가 격변합니다.";
