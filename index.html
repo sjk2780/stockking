@@ -31,7 +31,7 @@
     .team-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:1.25rem;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem;}
     .join-card{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:all .25s;}
     .join-card.joined{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.1);}
-    .join-badge{font-size:.68rem;font-weight:900;padding:.2rem .5rem;border-radius:99px;background:rgba(255,255,255,.12);color:#cbd5e1;white-space:nowrap;flex-shrink:0;}
+    .join-badge{font-size:.68rem;font-weight:900;padding:.2rem .5rem;border-radius99px;background:rgba(255,255,255,.12);color:#cbd5e1;white-space:nowrap;flex-shrink:0;}
     .join-badge.joined{background:#22c55e;color:#052e16;}
     .join-members{font-size:.68rem;color:#94a3b8;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;}
     .qr-thumb{width:64px;height:64px;border-radius:.4rem;overflow:hidden;cursor:pointer;flex-shrink:0;background:#fff;}
@@ -55,7 +55,6 @@
       <div class="flex flex-wrap gap-2 items-center">
         <span id="hClass" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">5반</span>
         <span id="hRound" class="px-3 py-1 rounded-full bg-white/10 text-sm font-bold">1라운드</span>
-        <button id="btnSave" class="btn px-4 py-2 rounded-2xl bg-emerald-500 text-slate-950 font-black text-sm">저장</button>
         <button id="btnReset" class="btn px-4 py-2 rounded-2xl bg-rose-500 text-white font-black text-sm">초기화</button>
       </div>
     </div>
@@ -318,7 +317,7 @@ const NEWS_POOL = [
    상태
 ══════════════════════════════════════ */
 const state = {
-  selectedClass:'5', teams:[], round:1, started:false, status:'ready', // status: 'ready'(대기), 'trading'(거래진행), 'locked'(거래종료)
+  selectedClass:'5', teams:[], round:1, started:false, status:'ready', 
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
 };
 function resetPrices(){ state.prices=Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
@@ -326,23 +325,13 @@ resetPrices();
 
 let myTeamName = null;
 let dbListener = null; 
-let isHost = true; // 사회자 여부 체크
+let isHost = true; 
 
-/* ══════════════════════════════════════
-   Firebase 저장 / 리스너 연동 (★롤백 현상 해결의 핵심)
-══════════════════════════════════════ */
 function saveToFirebase(){
   const data = {
-    selectedClass: state.selectedClass,
-    teams: state.teams,
-    round: state.round,
-    started: state.started,
-    status: state.status,
-    currentNews: state.currentNews,
-    prices: state.prices,
-    cash: state.cash,
-    holdings: state.holdings,
-    joined: state.joined
+    selectedClass: state.selectedClass, teams: state.teams, round: state.round,
+    started: state.started, status: state.status, currentNews: state.currentNews,
+    prices: state.prices, cash: state.cash, holdings: state.holdings, joined: state.joined
   };
   dbRef().set(data);
 }
@@ -354,13 +343,12 @@ function loadFromFirebase(callback){
   });
 }
 
-// 사회자용 실시간 리스너 (학생들의 매매로 변하는 현금/보유주식을 실시간 반영하여 사회자가 종료 시 덮어쓰는 것 방지)
+// 사회자용 실시간 리스너 (학생들의 실시간 데이터를 메모리에 동기화)
 function startHostListener(){
   if(dbListener) dbRef(state.selectedClass).off('value', dbListener);
   dbListener = dbRef(state.selectedClass).on('value', snap=>{
     if(!snap.exists() || !isHost) return;
     const d = snap.val();
-    // 데이터 동기화
     state.round = d.round ?? state.round;
     state.started = d.started ?? state.started;
     state.status = d.status ?? state.status;
@@ -371,7 +359,6 @@ function startHostListener(){
     state.joined = d.joined ?? state.joined;
     state.teams = d.teams ?? state.teams;
     
-    // UI 업데이트
     updateHeader();
     _drawLobby();
     renderHost();
@@ -537,7 +524,7 @@ function renderHost(){
 }
 
 /* ══════════════════════════════════════
-   학생 화면 및 안전 트랜잭션 매매 로직
+   학생 화면 및 안전 매매 로직
 ══════════════════════════════════════ */
 function renderStudentUI(teamName){
   document.getElementById('stuTeamBadge').textContent=teamName;
@@ -587,9 +574,9 @@ function renderStudentUI(teamName){
       </div>`;
   }).join('');
 
-  if(isClosed) return; // 시장이 닫혀있으면 이벤트 바인딩 안 함
+  if(isClosed) return; 
 
-  // 매수 버튼 클릭 (Firebase 원자적 트랜잭션 적용)
+  // 매수 실행
   document.querySelectorAll('.buyBtn').forEach(btn=>{
     btn.onclick=()=>{
       const stock=btn.dataset.s;
@@ -614,7 +601,7 @@ function renderStudentUI(teamName){
     };
   });
 
-  // 매도 버튼 클릭
+  // 매도 실행
   document.querySelectorAll('.sellBtn').forEach(btn=>{
     btn.onclick=()=>{
       const stock=btn.dataset.s;
@@ -678,29 +665,49 @@ function renderResult(){
 }
 
 /* ══════════════════════════════════════
-   뉴스 / 주가 변동 알고리즘
+   ★ 롤백 완벽 차단을 위한 정밀 데이터 업데이트 로직
 ══════════════════════════════════════ */
-function randomNews(){ state.currentNews=shuffle(NEWS_POOL).slice(0,4); renderHost(); saveToFirebase(); }
+function hostUpdateStatus(newStatus, additionalData = {}) {
+  // 타겟 노드(상태, 뉴스 등)만 콕 집어서 업데이트하여 학생들의 매매 데이터 오염을 100% 방지
+  const updates = { status: newStatus, ...additionalData };
+  dbRef().update(updates);
+}
+
+function hostShuffleNewsAndStart() {
+  const newNews = shuffle(NEWS_POOL).slice(0, 4);
+  hostUpdateStatus('trading', { currentNews: newNews });
+}
 
 function applyDayChange(){
-  // 호재/악재 뉴스 주가 반영
-  state.currentNews.forEach(n=>{
-    const base=STOCKS.find(s=>s.name===n.stock); if(!base) return;
-    const cur=state.prices[n.stock]||base.price;
-    state.prices[n.stock]=Math.max(1000,Math.round(cur*(1+n.effect+(Math.random()*.04-.02))));
+  // 최신 주가 데이터를 기반으로 연산하기 위해 트랜잭션 방식으로 안전하게 주가 증감 처리
+  dbRef().transaction(currentData => {
+    if (!currentData) return currentData;
+    
+    const news = currentData.currentNews || [];
+    const prices = currentData.prices || {};
+
+    // 1. 뉴스 효과 반영
+    news.forEach(n => {
+      const base = STOCKS.find(s => s.name === n.stock); if (!base) return;
+      const cur = prices[n.stock] || base.price;
+      prices[n.stock] = Math.max(1000, Math.round(cur * (1 + n.effect + (Math.random() * .04 - .02))));
+    });
+
+    // 2. 일반 자연 변동
+    STOCKS.forEach(s => {
+      if (!news.some(n => n.stock === s.name)) {
+        const cur = prices[s.name] || s.price;
+        prices[s.name] = Math.max(1000, Math.round(cur * (1 + (Math.random() * .08 - .04))));
+      }
+    });
+
+    currentData.prices = prices;
+    currentData.round = (currentData.round || 1) + 1;
+    currentData.status = 'ready'; 
+    currentData.currentNews = [];
+
+    return currentData;
   });
-  // 일반 자연 변동
-  STOCKS.forEach(s=>{
-    if(!state.currentNews.some(n=>n.stock===s.name)){
-      const cur=state.prices[s.name]||s.price;
-      state.prices[s.name]=Math.max(1000,Math.round(cur*(1+(Math.random()*.08-.04))));
-    }
-  });
-  state.round++;
-  state.status = 'ready'; // 대기 상태로 변경
-  state.currentNews = [];
-  saveToFirebase();
-  renderHost();
 }
 
 /* ══════════════════════════════════════
@@ -743,30 +750,32 @@ document.getElementById('btnStartGame').onclick=()=>{
   state.started=true; state.round=1; state.status='ready';
   saveToFirebase();
   renderHost(); renderResult(); show('host');
-  alert('게임이 시작되었습니다! 학생들 화면이 자동으로 바뀝니다.');
+  alert('게임이 시작되었습니다!');
 };
 
+// 🌟 사회자 제어 이벤트 전면 수정 (콕 집어 업데이트하는 방식 적용)
 document.getElementById('btnRoundStart').onclick=()=>{
   if(!state.started) return alert('먼저 게임 시작을 눌러주세요.');
-  state.status = 'trading'; // 거래 활성화
-  randomNews(); 
-  alert(`📢 라운드 ${state.round} 마켓이 열렸습니다! 학생들이 거래를 시작할 수 있습니다.`);
+  hostShuffleNewsAndStart();
+  alert(`📢 라운드가 시작되었습니다! 시장이 활성화됩니다.`);
 };
-document.getElementById('btnShuffleNews').onclick=randomNews;
+
+document.getElementById('btnShuffleNews').onclick=()=>{
+  const newNews = shuffle(NEWS_POOL).slice(0, 4);
+  dbRef().update({ currentNews: newNews });
+};
 
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.status = 'locked'; // 거래 잠금
-  saveToFirebase(); 
-  renderResult(); 
+  hostUpdateStatus('locked'); 
   show('result');
-  alert('🔒 라운드 거래가 종료되었습니다. 학생들의 화면이 동결됩니다.');
+  alert('🔒 라운드 거래가 마감되었습니다. 학생들의 화면이 동결되고 정산 화면이 표시됩니다.');
 };
 
 document.getElementById('btnNextDay').onclick=()=>{ 
   if(confirm('다음날 주가 변동을 시뮬레이션하고 정산하시겠습니까?')) {
     applyDayChange(); 
     show('host'); 
-    alert('🎲 주가 변동 정산이 완료되었습니다! 다음 라운드를 시작하세요.');
+    alert('🎲 주가 정산 및 다음날 변동이 완료되었습니다!');
   }
 };
 document.getElementById('btnBackHost').onclick=()=>show('host');
@@ -775,7 +784,6 @@ document.getElementById('btnStuRefresh').onclick=()=>{
   if(myTeamName) loadFromFirebase(()=>renderStudentUI(myTeamName));
 };
 
-document.getElementById('btnSave').onclick=()=>{ saveToFirebase(); alert('저장되었습니다.'); };
 document.getElementById('btnReset').onclick=()=>{
   if(!confirm('현재 반 데이터를 초기화할까요?')) return;
   dbRef().remove().then(()=>location.reload());
@@ -792,7 +800,7 @@ const classParam = urlParams.get('c');
 const teamParam  = urlParams.get('t');
 
 if(classParam && teamParam){
-  isHost = false; // 학생으로 접속
+  isHost = false; 
   myTeamName = decodeURIComponent(teamParam);
   state.selectedClass = classParam;
 
@@ -803,11 +811,11 @@ if(classParam && teamParam){
     startStudentListener(myTeamName);
   });
 } else {
-  isHost = true; // 사회자로 접속
+  isHost = true; 
   loadFromFirebase(()=>{
     updateHeader(); renderTeamPreview(); renderHost(); renderResult();
     show('select');
-    startHostListener(); // 사회자 실시간 동기화 리스너 켜기
+    startHostListener(); 
   });
 }
 </script>
