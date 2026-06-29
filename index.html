@@ -214,9 +214,6 @@
           <div class="text-xs text-slate-400 mb-1">내 팀</div>
           <div id="stuTeamWait" class="text-4xl font-black text-cyan-300">1팀</div>
         </div>
-        <div class="p-4 rounded-2xl bg-yellow-400/10 border border-yellow-400/30 text-sm text-yellow-300 font-bold">
-          선생님이 시작 버튼을 누르면 화면이 전환됩니다.
-        </div>
       </div>
 
       <div id="stuGame" style="display:none">
@@ -320,9 +317,6 @@ const NEWS_POOL = [
   {stock:'용인스포츠',title:'국제 대회 후원 계약',effect:0.1,text:'용인스포츠가 국제 대회 후원 계약을 따냈습니다.'}
 ];
 
-/* ══════════════════════════════════════
-   상태 구조 (status 추가: 'ready' | 'trading' | 'locked')
-══════════════════════════════════════ */
 const state = {
   selectedClass:'5', teams:[], round:1, started:false, status:'ready',
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
@@ -334,7 +328,7 @@ let myTeamName = null;
 let dbListener = null;
 
 /* ══════════════════════════════════════
-   Firebase 통신 및 동기화
+   데이터 동기화
 ══════════════════════════════════════ */
 function saveToFirebase(){
   const data = {
@@ -362,7 +356,7 @@ function startStudentListener(teamName){
 }
 
 /* ══════════════════════════════════════
-   핵심 수학 및 유틸 로직
+   비즈니스 유틸 로직
 ══════════════════════════════════════ */
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
 function assignTeams(students){
@@ -509,12 +503,11 @@ function renderHost(){
 }
 
 /* ══════════════════════════════════════
-   보완점 ①: 학생 거래 화면 정밀 제어 및 트랜잭션 안전 잠금
+   🛠️ 수정 보완: 매수/매도 실시간 즉각 반영 로직
 ══════════════════════════════════════ */
 function renderStudentUI(teamName){
   document.getElementById('stuTeamBadge').textContent=teamName;
 
-  // 완전히 시작이 안 된 준비 상태인 경우
   if(!state.started){
     document.getElementById('stuWaiting').style.display='';
     document.getElementById('stuGame').style.display='none';
@@ -522,11 +515,13 @@ function renderStudentUI(teamName){
     return;
   }
 
-  // 거래 화면 진입
   document.getElementById('stuWaiting').style.display='none';
   document.getElementById('stuGame').style.display='';
   document.getElementById('stuTeam').textContent=teamName;
-  document.getElementById('stuCash').textContent=`${(state.cash[teamName]??100000).toLocaleString()}원`;
+  
+  // 무조건 현재 유저가 가진 현금과 주식 정보를 화면에 꽂아줌
+  const currentCash = state.cash[teamName] ?? 100000;
+  document.getElementById('stuCash').textContent=`${currentCash.toLocaleString()}원`;
   document.getElementById('stuAsset').textContent=`${teamAsset(teamName).total.toLocaleString()}원`;
 
   const isLocked = (state.status === 'locked');
@@ -547,8 +542,6 @@ function renderStudentUI(teamName){
   area.innerHTML=STOCKS.map(s=>{
     const price=Math.round(state.prices[s.name]||s.price);
     const qty=state.holdings[teamName]?.[s.name]||0;
-    
-    // 거래 종료(locked) 상태면 버튼에 disabled 속성을 부여해 마킹
     const disabledAttr = isLocked ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : '';
     
     return `
@@ -558,65 +551,65 @@ function renderStudentUI(teamName){
           <div class="text-sm text-slate-300 mt-0.5">현재가 ${price.toLocaleString()}원 · 보유 ${qty}주</div>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button ${disabledAttr} class="tradeBtn btn px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 font-black text-sm" data-a="buy" data-s="${s.name}">매수</button>
-          <button ${disabledAttr} class="tradeBtn btn px-3 py-2 rounded-xl bg-rose-400 text-white font-black text-sm" data-a="sell" data-s="${s.name}">매도</button>
+          <button ${disabledAttr} class="buyBtn btn px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 font-black text-sm" data-s="${s.name}">매수</button>
+          <button ${disabledAttr} class="sellBtn btn px-3 py-2 rounded-xl bg-rose-400 text-white font-black text-sm" data-s="${s.name}">매도</button>
         </div>
       </div>`;
   }).join('');
 
-  // 매수, 매도 이벤트 핸들러 및 안전 동시성 트랜잭션 처리
-  document.querySelectorAll('.tradeBtn').forEach(btn=>{
-    if(isLocked) return; // 자바스크립트 단에서도 실행 철저히 방어
+  if(isLocked) return; // 거래 종료 상태면 클릭 차단
 
+  // 매수 실행
+  document.querySelectorAll('.buyBtn').forEach(btn=>{
     btn.onclick=()=>{
-      const stock=btn.dataset.s, action=btn.dataset.a;
+      const stock=btn.dataset.s;
       const price=Math.round(state.prices[stock]||0);
       
-      if(action==='buy'){
-        // 현금 트랜잭션 처리 (돈 복사 방지)
-        db.ref(`games/class_${state.selectedClass}/cash/${teamName}`).transaction(currentCash => {
-          if(currentCash === null) return 100000;
-          if(currentCash < price) {
-            alert('보유 현금이 부족합니다!');
-            return;
-          }
-          
-          // 현금 차감이 성공할 때만 주식 수량 증가
-          db.ref(`games/class_${state.selectedClass}/holdings/${teamName}/${stock}`).transaction(currentQty => {
-            return (currentQty || 0) + 1;
-          });
-          return currentCash - price;
-        });
-      } else {
-        // 주식 차감 트랜잭션 처리 (무한 매도 방지)
-        db.ref(`games/class_${state.selectedClass}/holdings/${teamName}/${stock}`).transaction(currentQty => {
-          if(!currentQty || currentQty <= 0) {
-            alert('보유 주식이 없습니다.');
-            return;
-          }
-          
-          // 주식 판매 성공 시에만 대금 획득
-          db.ref(`games/class_${state.selectedClass}/cash/${teamName}`).transaction(currentCash => {
-            return (currentCash || 0) + price;
-          });
-          return currentQty - 1;
-        });
-      }
+      // 실시간 안전 업데이트를 위해 DB의 타겟 노드를 직접 증감
+      dbRef().child(`cash/${teamName}`).transaction(cash => {
+        if (cash === null) return 100000;
+        if (cash < price) {
+          alert('현금이 부족하여 매수할 수 없습니다!');
+          return;
+        }
+        
+        // 돈이 있는 경우에만 주식 수량 +1
+        dbRef().child(`holdings/${teamName}/${stock}`).transaction(qty => (qty || 0) + 1);
+        return cash - price;
+      });
+    };
+  });
+
+  // 매도 실행
+  document.querySelectorAll('.sellBtn').forEach(btn=>{
+    btn.onclick=()=>{
+      const stock=btn.dataset.s;
+      const price=Math.round(state.prices[stock]||0);
+
+      dbRef().child(`holdings/${teamName}/${stock}`).transaction(qty => {
+        if (!qty || qty <= 0) {
+          alert('보유하고 있는 주식이 없습니다!');
+          return;
+        }
+        
+        // 주식이 확실히 있는 경우에만 현금 대금 +price
+        dbRef().child(`cash/${teamName}`).transaction(cash => (cash || 100000) + price);
+        return qty - 1;
+      });
     };
   });
 }
 
 /* ══════════════════════════════════════
-   보완점 ②: 라운드 종료(정산)와 다음날 주가 반영 결과 연출 화면
+   결과 화면
 ══════════════════════════════════════ */
 function renderResult(isPostStockMarket = false){
   const box=document.getElementById('resultArea');
   if(!state.teams.length){ box.innerHTML=`<div class="p-4 text-slate-400">결과 데이터가 존재하지 않습니다.</div>`; return; }
   
-  // 제목 텍스트 다이내믹 변경
   if(isPostStockMarket) {
-    document.getElementById('resultTitle').textContent = `📈 다음날 주가 변동 결과 (${state.round - 1}R 종료 정산)`;
-    document.getElementById('resultDesc').textContent = "호재/악재 뉴스가 주가에 최종 반영되어 자산이 리밸런싱된 순위입니다!";
+    document.getElementById('resultTitle').textContent = `📈 다음날 주가 변동 결과 (${state.round - 1}R 변동 정산)`;
+    document.getElementById('resultDesc').textContent = "호재/악재 뉴스가 주가에 반영되어 자산 순위가 최종 갱신되었습니다!";
   } else {
     document.getElementById('resultTitle').textContent = `🔒 거래 마감 정산 현황 (${state.round}R 중간 평가)`;
     document.getElementById('resultDesc').textContent = "시장이 동결되었습니다. 다음날 주가 반영 버튼을 누르면 순위가 격변합니다.";
@@ -647,7 +640,7 @@ function renderResult(isPostStockMarket = false){
 }
 
 /* ══════════════════════════════════════
-   비즈니스 로직 연산 (주가 연산 알고리즘)
+   주가 변동 알고리즘
 ══════════════════════════════════════ */
 function randomNews(){ 
   state.currentNews=shuffle(NEWS_POOL).slice(0,4); 
@@ -656,13 +649,13 @@ function randomNews(){
 }
 
 function applyDayChange(){
-  // 1. 뉴스 버프/너프 수치 반영
+  // 1. 뉴스 효과 반영
   state.currentNews.forEach(n=>{
     const base=STOCKS.find(s=>s.name===n.stock); if(!base) return;
     const cur=state.prices[n.stock]||base.price;
     state.prices[n.stock]=Math.max(1000,Math.round(cur*(1+n.effect+(Math.random()*.04-.02))));
   });
-  // 2. 일반 주식 무작위 자연 유동성 반영
+  // 2. 일반 자연 변동성 반영
   STOCKS.forEach(s=>{
     if(!state.currentNews.some(n=>n.stock===s.name)){
       const cur=state.prices[s.name]||s.price;
@@ -671,17 +664,17 @@ function applyDayChange(){
   });
   
   state.round++;
-  state.status = 'ready'; // 다음 라운드를 위해 상태 초기화
-  state.currentNews = []; // 뉴스는 초기화
+  state.status = 'ready';
+  state.currentNews = [];
   
   saveToFirebase();
   renderHost();
-  renderResult(true); // 보완점 ②: 변동 결과를 활성화하여 결과창 새로 리랜더링
+  renderResult(true); 
   show('result');
 }
 
 /* ══════════════════════════════════════
-   이벤트 바인딩 인터페이스
+   이벤트 바인딩
 ══════════════════════════════════════ */
 document.querySelectorAll('.classBtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -697,7 +690,6 @@ document.getElementById('btnEnterClass').onclick=()=>{
   document.getElementById('rosterLabel').textContent=`${state.selectedClass}반`;
   renderTeamPreview();
 };
-document.getElementById('btnBackSelect').onclick=()=>show('select');
 document.getElementById('btnLoadDemo').onclick=()=>{ document.getElementById('studentInput').value=demoStudents().join('\n'); };
 
 document.getElementById('btnAssign').onclick=()=>{
@@ -720,36 +712,30 @@ document.getElementById('btnStartGame').onclick=()=>{
   state.started=true; state.round=1; state.status='ready';
   saveToFirebase();
   renderHost(); renderResult(); show('host');
-  alert('게임 세션이 열렸습니다. 학생들이 거래 대기화면에 입장합니다.');
 };
 
-// 진행 프로세스 컨트롤러 버튼 액션
 document.getElementById('btnRoundStart').onclick=()=>{
   if(!state.started) return alert('먼저 게임 시작 버튼을 클릭해 주세요.');
   state.status = 'trading';
   randomNews(); 
-  alert(`📢 라운드 ${state.round} 거래가 활성화되었습니다!\n학생 화면에 마켓이 오픈되고 뉴스가 송출됩니다.`);
 };
 
 document.getElementById('btnShuffleNews').onclick=randomNews;
 
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.status = 'locked'; // 자산 동결 마킹
+  state.status = 'locked'; 
   saveToFirebase(); 
-  renderResult(false); // 동결 시점 1차 랭킹 정산 리포트 출력
+  renderResult(false); 
   show('result');
-  alert('🔒 라운드 거래를 종료합니다.\n학생 화면의 매수/매도 시스템이 차단되었으며 자산 실시간 평가가 잠겼습니다.');
 };
 
 document.getElementById('btnNextDay').onclick=()=>{ 
   if(confirm('다음날 주가를 시뮬레이션하고 자산을 정산하겠습니까?')) {
     applyDayChange(); 
-    alert('📈 밤사이 주가 대폭 변동 및 뉴스 영향도가 가중 반영되었습니다.\n화면의 변화된 최종 랭킹 가치를 조망하세요!');
   }
 };
 document.getElementById('btnResultNextDay').onclick=()=> {
   applyDayChange();
-  alert('📈 밤사이 주가 대폭 변동 및 뉴스 영향도가 가중 반영되었습니다.\n화면의 변화된 최종 랭킹 가치를 조망하세요!');
 };
 
 document.getElementById('btnBackHost').onclick=()=> {
