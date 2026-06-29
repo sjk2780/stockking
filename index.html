@@ -42,27 +42,7 @@
     .row-status.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
     .join-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;}
     @media(max-width:768px){.mhide{display:none!important}}
-  
-#qrModalUrl{display:none;}
-</style>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-const firebaseConfig = {
-  apiKey: "AIzaSyA353aGhoZh3SiKRT2diXoN4b2u2UF7TLQ",
-  authDomain: "stockking-71128.firebaseapp.com",
-  databaseURL: "https://stockking-71128-default-rtdb.firebaseio.com",
-  projectId: "stockking-71128",
-  storageBucket: "stockking-71128.firebasestorage.app",
-  messagingSenderId: "15855354465",
-  appId: "1:15855354465:web:a80ec27e0a3465f2f96020"
-};
-window.firebaseApp = initializeApp(firebaseConfig);
-window.db = getDatabase(window.firebaseApp);
-window.firebase = {ref,set,get,onValue,update};
-</script>
-
+  </style>
 </head>
 <body>
 <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
@@ -307,7 +287,6 @@ const NEWS_POOL = [
 /* ─── 상태 ─── */
 const state = {
   selectedClass:'5', teams:[], round:1, started:false,
-  roundOpen:false,
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{}
 };
 function resetPrices(){ state.prices = Object.fromEntries(STOCKS.map(s=>[s.name,s.price])); }
@@ -466,8 +445,8 @@ function renderLobby(){
     makeQR(thumb, url, 80);
     thumb.onclick=()=>{
       document.getElementById('qrModalLabel').textContent=`${t.name} QR`;
-      document.getElementById('qrModalUrl').textContent='';
-      makeQR(document.getElementById('qrModalCanvas'), url, 340);
+      document.getElementById('qrModalUrl').textContent=url;
+      makeQR(document.getElementById('qrModalCanvas'), url, 260);
       document.getElementById('qrModal').classList.remove('hidden');
       document.getElementById('qrModal').classList.add('flex');
     };
@@ -525,7 +504,7 @@ function renderStudent(teamName){
   document.getElementById('stuAsset').textContent = `${teamAsset(teamName).total.toLocaleString()}원`;
 
   const area = document.getElementById('tradeArea');
-  if(!state.roundOpen){
+  if(!state.started){
     area.innerHTML=`<div class="p-5 rounded-2xl bg-black/20 text-slate-400 text-sm text-center">⏳ 선생님이 라운드를 시작할 때까지 기다려주세요.<br><span class="text-xs mt-1 block">새로고침 버튼을 누르면 상태가 갱신됩니다.</span></div>`;
     return;
   }
@@ -645,21 +624,18 @@ document.getElementById('btnRefreshLobby').onclick=()=>renderLobby();
 
 document.getElementById('btnStartGame').onclick=()=>{
   if(!state.teams.length) return alert('먼저 팀 배정을 해주세요.');
-  state.started=true;
-  state.roundOpen=false; state.round=1;
+  state.started=true; state.round=1;
   renderHost(); renderResult(); show('host'); save();
   alert('게임이 시작되었습니다!');
 };
 
 document.getElementById('btnRoundStart').onclick=()=>{
   if(!state.started) return alert('먼저 게임 시작을 눌러주세요.');
-  state.roundOpen=true;
-  save();
   randomNews(); alert(`라운드 ${state.round} 시작! 뉴스를 읽어주세요.`);
 };
 document.getElementById('btnShuffleNews').onclick=randomNews;
 document.getElementById('btnRoundEnd').onclick=()=>{
-  state.roundOpen=false; renderResult(); show('result'); save();
+  state.started=false; renderResult(); show('result'); save();
   alert('라운드 종료! 학생들은 매수/매도 불가합니다.');
 };
 document.getElementById('btnNextDay').onclick=()=>{ applyDayChange(); show('host'); alert('다음날 주가 변동이 반영되었습니다.'); };
@@ -683,42 +659,25 @@ function closeModal(){ document.getElementById('qrModal').classList.add('hidden'
 
 /* ─── 초기 진입 처리 ─── */
 const hash = new URLSearchParams(location.hash.replace('#',''));
-const classFromHash = hash.get('c');
 const teamFromHash = hash.get('t');
 const dataFromHash = hash.get('d');
+const classFromHash = hash.get('c');
 
-// Firebase 방식 (#c=5반&t=1팀)
 if(classFromHash && teamFromHash){
   state.selectedClass = decodeURIComponent(classFromHash);
-  const teamName = decodeURIComponent(teamFromHash);
-
-  if(window.db && window.firebase){
-    const gameRef = window.firebase.ref(window.db, `games/${state.selectedClass}`);
-
-    window.firebase.onValue(gameRef, (snap)=>{
-      const data = snap.val();
-      if(!data) return;
-
-      Object.assign(state, data);
-      state.joined = state.joined || {};
-      state.joined[teamName] = true;
-
-      window.firebase.update(
-        window.firebase.ref(window.db, `games/${state.selectedClass}/joined`),
-        { [teamName]: true }
-      );
-
-      updateHeader();
-      renderStudent(teamName);
-      show('student');
-    });
-  }
-}
-// 예전 QR 방식 (#t=1팀&d=...)
-else if(teamFromHash && dataFromHash){
+  loadLS();
+  if(!state.joined) state.joined = {};
+  state.joined[decodeURIComponent(teamFromHash)] = true;
+  saveLS();
+  updateHeader();
+  renderStudent(decodeURIComponent(teamFromHash));
+  show('student');
+} else if(teamFromHash && dataFromHash){
+  // 학생 태블릿 접속: URL에서 게임 상태 복원
   const ok = decodeState(dataFromHash);
   if(ok){
     const teamName = decodeURIComponent(teamFromHash);
+    // 접속 기록을 localStorage에 남기기 (선생님 화면 갱신용)
     const lsRaw = localStorage.getItem(lsKey());
     const lsData = lsRaw ? JSON.parse(lsRaw) : {};
     if(!lsData.joined) lsData.joined={};
@@ -733,11 +692,8 @@ else if(teamFromHash && dataFromHash){
     show('select');
   }
 } else {
-  loadLS();
-  updateHeader();
-  renderTeamPreview();
-  renderHost();
-  renderResult();
+  // 선생님 컴퓨터
+  loadLS(); updateHeader(); renderTeamPreview(); renderHost(); renderResult();
   show('select');
 }
 </script>
