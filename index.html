@@ -42,6 +42,13 @@
     .row-s.joined{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08);}
     .qr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
     .news-card-btn{text-align:left;transition:all .2s;}
+    .timer-ring { transition: stroke-dashoffset 1s linear; }
+    .minigame-btn { transition: all .2s; border: 2px solid transparent; }
+    .minigame-btn:hover { transform: scale(1.03); border-color: rgba(251,191,36,.5); }
+    .minigame-btn.selected { border-color: #fbbf24; background: rgba(251,191,36,.15); }
+    @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.4)} 50%{box-shadow:0 0 0 12px rgba(251,191,36,0)} }
+    .pulse-gold { animation: pulse-gold 1.5s infinite; }
+
     .news-card-btn:hover{background:rgba(255,255,255,0.15);transform:scale(1.01);}
   </style>
 </head>
@@ -154,11 +161,30 @@
             <h2 class="text-3xl font-black text-yellow-400">📊 실시간 거래 종합 상황판</h2>
             <p class="text-slate-300 text-sm mt-1">뉴스를 클릭하면 TV 대형 팝업으로 커집니다. 미니게임 승리 팀에게 블라인드 비밀 정보를 전송해 보세요!</p>
           </div>
-          <div class="flex gap-2 flex-wrap">
-            <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">▶ 라운드 시작 (거래 활성화)</button>
-            <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">⏸ 라운드 종료 (동결/결과)</button>
-            <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">🎲 밤사이에 주가 변동시키기</button>
-            <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기</button>
+          <div class="flex flex-col gap-3">
+            <div class="flex gap-2 flex-wrap">
+              <button id="btnRoundStart" class="btn px-5 py-3 rounded-2xl bg-blue-500 text-white font-black">▶ 라운드 시작 (거래 활성화)</button>
+              <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">⏸ 라운드 종료 (동결/결과)</button>
+              <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black">🎲 밤사이에 주가 변동시키기</button>
+              <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 대기</button>
+            </div>
+            <!-- 거래 타이머 -->
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/6 border border-white/10">
+              <span class="text-sm font-black text-slate-300">⏱ 거래 타이머</span>
+              <button class="timerBtn btn px-3 py-1.5 rounded-xl bg-white/10 text-sm font-bold" data-sec="180">3분</button>
+              <button class="timerBtn btn px-3 py-1.5 rounded-xl bg-white/10 text-sm font-bold" data-sec="300">5분</button>
+              <button class="timerBtn btn px-3 py-1.5 rounded-xl bg-white/10 text-sm font-bold" data-sec="600">10분</button>
+              <button id="btnTimerStop" class="btn px-3 py-1.5 rounded-xl bg-rose-500/30 text-rose-300 text-sm font-bold hidden">■ 정지</button>
+              <div id="timerDisplay" class="hidden items-center gap-2">
+                <svg width="48" height="48" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+                  <circle id="timerRing" cx="24" cy="24" r="20" fill="none" stroke="#fbbf24" stroke-width="4"
+                    stroke-dasharray="125.6" stroke-dashoffset="0" stroke-linecap="round"
+                    transform="rotate(-90 24 24)" class="timer-ring"/>
+                </svg>
+                <span id="timerText" class="text-2xl font-black text-yellow-300 tabular-nums">5:00</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -309,6 +335,127 @@
       </div>
     </section>
 
+
+    <!-- ⑦ 미니게임 라운드 (선생님) -->
+    <section id="screen-minigame" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400 text-slate-900 font-black text-sm mb-2">🎮 미니게임 타임!</div>
+            <h2 class="text-2xl md:text-3xl font-black">교실 미니게임 라운드</h2>
+            <p class="text-slate-300 text-sm mt-1">각 모둠 대표 한 명씩 나와서 대결! 1등 모둠에게 보상을 선택해주세요.</p>
+          </div>
+          <button id="btnMiniSkip" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold self-start">미니게임 건너뛰기 →</button>
+        </div>
+
+        <!-- 게임 선택 -->
+        <div class="mb-6">
+          <div class="text-sm font-black text-slate-300 mb-3">어떤 미니게임을 할까요?</div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="miniGamePicker">
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="369게임">
+              <div class="text-2xl mb-1">🔢</div>
+              <div class="font-black">369 게임</div>
+              <div class="text-xs text-slate-400 mt-1">3·6·9에서 박수! 틀리면 탈락</div>
+            </button>
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="눈치게임">
+              <div class="text-2xl mb-1">👀</div>
+              <div class="font-black">눈치 게임</div>
+              <div class="text-xs text-slate-400 mt-1">같은 숫자 외치면 탈락, 심리전!</div>
+            </button>
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="OX퀴즈">
+              <div class="text-2xl mb-1">⭕</div>
+              <div class="font-black">경제 OX 퀴즈</div>
+              <div class="text-xs text-slate-400 mt-1">주식·경제 관련 O/X 문제</div>
+            </button>
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="초성퀴즈">
+              <div class="text-2xl mb-1">🔤</div>
+              <div class="font-black">경제 초성 퀴즈</div>
+              <div class="text-xs text-slate-400 mt-1">먼저 맞춘 모둠이 승리</div>
+            </button>
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="숫자협상">
+              <div class="text-2xl mb-1">🎯</div>
+              <div class="font-black">숫자 협상 게임</div>
+              <div class="text-xs text-slate-400 mt-1">정답 숫자에 가장 가까운 팀 승!</div>
+            </button>
+            <button class="minigame-btn glass rounded-2xl p-4 text-left" data-game="직접입력">
+              <div class="text-2xl mb-1">✏️</div>
+              <div class="font-black">직접 입력</div>
+              <div class="text-xs text-slate-400 mt-1">선생님이 직접 게임 정하기</div>
+            </button>
+          </div>
+          <div id="customGameWrap" class="hidden mt-3">
+            <input id="customGameName" class="w-full p-3 rounded-2xl bg-slate-900 border border-white/20 text-white text-sm" placeholder="게임 이름을 입력하세요 (예: 제스처 릴레이)"/>
+          </div>
+        </div>
+
+        <!-- 학생 화면 안내 메시지 전송 -->
+        <div class="mb-6 p-4 rounded-2xl bg-cyan-400/10 border border-cyan-400/20">
+          <div class="text-sm font-black text-cyan-300 mb-2">📢 학생 화면에 미니게임 안내 자동 표시 중</div>
+          <div id="miniGameStudentMsg" class="text-xs text-slate-300">게임을 선택하면 학생 화면에 안내 메시지가 자동으로 표시됩니다.</div>
+        </div>
+
+        <!-- 1등 팀 선택 & 보상 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
+            <div class="text-sm font-black text-slate-300 mb-3">🏆 1등 모둠 선택</div>
+            <div id="winnerBtns" class="grid grid-cols-3 gap-2">
+              <!-- 팀 버튼은 JS로 생성 -->
+            </div>
+          </div>
+
+          <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
+            <div class="text-sm font-black text-slate-300 mb-3">🎁 보상 선택</div>
+            <div class="space-y-3">
+              <button id="rewardHint" class="w-full btn p-4 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-left hover:bg-indigo-500/30">
+                <div class="font-black text-indigo-300">🤫 다음 주가 힌트 (비밀 찌라시)</div>
+                <div class="text-xs text-slate-400 mt-1">1등 모둠에게 다음 라운드 주가 변동 힌트를 몰래 전송</div>
+              </button>
+              <button id="rewardCash" class="w-full btn p-4 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-left hover:bg-emerald-500/30">
+                <div class="font-black text-emerald-300">💰 현금 보너스 지급</div>
+                <div class="text-xs text-slate-400 mt-1">1등 모둠에게 보너스 현금 지급</div>
+              </button>
+              <div id="cashAmountWrap" class="hidden flex gap-2">
+                <input id="miniCashAmount" type="number" class="flex-1 p-2.5 rounded-xl bg-slate-900 border border-white/20 text-yellow-300 font-bold text-sm" value="200000" placeholder="보너스 금액"/>
+                <button id="btnApplyMiniCash" class="btn px-4 rounded-xl bg-emerald-400 text-slate-950 font-black text-sm">지급!</button>
+              </div>
+              <button id="rewardBoth" class="w-full btn p-4 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-left hover:bg-yellow-400/20">
+                <div class="font-black text-yellow-300">✨ 둘 다!</div>
+                <div class="text-xs text-slate-400 mt-1">힌트 + 현금 동시 지급</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex justify-end">
+          <button id="btnMiniDone" class="btn px-8 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg">미니게임 완료 → 다음 라운드 시작</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 학생 화면: 미니게임 대기 -->
+    <section id="screen-minigame-student" class="screen">
+      <div class="glass rounded-3xl p-4 mb-4 glow">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-900 font-black text-xs">구갈중 주식왕</span>
+            <span id="miniStuTeamBadge" class="px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-300 font-black text-sm">1팀</span>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-300 font-black text-sm">🎮 미니게임 타임</span>
+        </div>
+      </div>
+      <div class="glass rounded-3xl p-8 text-center">
+        <div class="text-7xl mb-5">🎮</div>
+        <h2 class="text-3xl font-black mb-3 text-yellow-300">미니게임 타임!</h2>
+        <div id="miniStuGameName" class="text-xl font-black mb-4 text-white">선생님의 안내를 기다리세요</div>
+        <div id="miniStuMsg" class="p-5 rounded-2xl bg-white/6 border border-white/10 text-slate-200 text-base leading-relaxed mb-5">
+          선생님이 미니게임을 선택하는 중입니다...
+        </div>
+        <div id="miniStuSecret" class="hidden p-4 rounded-2xl bg-cyan-400/20 border-2 border-cyan-400 text-cyan-100 font-black text-sm">
+          🤫 비밀 정보가 도착했습니다! 위 찌라시 알림을 확인하세요.
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -401,7 +548,8 @@ const state = {
   selectedClass:'5', teams:[], round:1, started:false, status:'ready', 
   currentNews:[], prices:{}, cash:{}, holdings:{}, joined:{},
   secretNews: {}, 
-  currentSecretThisRound: null 
+  currentSecretThisRound: null, 
+  miniGame: null, miniWinner: null 
 };
 let cart = {}; 
 
@@ -418,7 +566,9 @@ function saveToFirebase(){
     started: state.started, status: state.status, currentNews: state.currentNews,
     prices: state.prices, cash: state.cash, holdings: state.holdings, joined: state.joined,
     secretNews: state.secretNews ?? {},
-    currentSecretThisRound: state.currentSecretThisRound ?? null
+    currentSecretThisRound: state.currentSecretThisRound ?? null,
+    miniGame: state.miniGame ?? null,
+    miniWinner: state.miniWinner ?? null
   };
   dbRef().set(data);
 }
@@ -446,6 +596,8 @@ function startHostListener(){
     state.teams = d.teams ?? state.teams;
     state.secretNews = d.secretNews ?? {};
     state.currentSecretThisRound = d.currentSecretThisRound ?? null;
+    state.miniGame = d.miniGame ?? null;
+    state.miniWinner = d.miniWinner ?? null;
     
     updateHeader();
     _drawLobby();
@@ -459,7 +611,26 @@ function startStudentListener(teamName){
   dbListener = dbRef(state.selectedClass).on('value', snap=>{
     if(!snap.exists()) return;
     Object.assign(state, snap.val());
-    renderStudentUI(teamName);
+    if (state.status === 'minigame') {
+      // 미니게임 화면으로 전환
+      document.getElementById('miniStuTeamBadge').textContent = teamName;
+      const mg = state.miniGame;
+      if (mg && mg.name && mg.name !== '?') {
+        document.getElementById('miniStuGameName').textContent = mg.name;
+        document.getElementById('miniStuMsg').textContent = mg.msg || '선생님의 안내를 기다리세요.';
+      }
+      // 비밀 찌라시 알림
+      const secret = state.secretNews?.[teamName];
+      const miniSecret = document.getElementById('miniStuSecret');
+      if (secret && secret.trim()) {
+        miniSecret.classList.remove('hidden');
+      } else {
+        miniSecret.classList.add('hidden');
+      }
+      show('minigame-student');
+    } else {
+      renderStudentUI(teamName);
+    }
   });
 }
 
@@ -494,12 +665,14 @@ function demoStudents(){
 /* ══════════════════════════════════════
    화면 라우팅
 ══════════════════════════════════════ */
+const SCREENS=['select','roster','lobby','host','student','result','minigame','minigame-student'];
+
 function show(id){
   SCREENS.forEach(n=>{
     const el = document.getElementById(`screen-${n}`);
     if(el) el.classList.toggle('active', n===id);
   });
-  document.getElementById('mainHeader').style.display = id==='student' ? 'none' : '';
+  document.getElementById('mainHeader').style.display = (id==='student'||id==='minigame-student') ? 'none' : '';
   if(id==='student') window.scrollTo(0,0);
 }
 
@@ -861,7 +1034,7 @@ function hostShuffleNewsAndStart() {
 }
 
 function applyDayChange(){
-  dbRef().transaction(currentData => {
+  return dbRef().transaction(currentData => {
     if (!currentData) return currentData;
     
     const news = currentData.currentNews || [];
@@ -954,6 +1127,211 @@ document.getElementById('btnApplyStockMod').onclick = () => {
   });
 };
 
+
+/* ══════════════════════════════════════
+   거래 타이머
+══════════════════════════════════════ */
+let timerInterval = null;
+let timerTotal = 0;
+let timerLeft = 0;
+
+function startTimer(seconds) {
+  if (timerInterval) clearInterval(timerInterval);
+  timerTotal = seconds;
+  timerLeft = seconds;
+
+  const display = document.getElementById('timerDisplay');
+  const text = document.getElementById('timerText');
+  const ring = document.getElementById('timerRing');
+  const stopBtn = document.getElementById('btnTimerStop');
+  const circumference = 125.6;
+
+  display.classList.remove('hidden');
+  display.classList.add('flex');
+  stopBtn.classList.remove('hidden');
+
+  function tick() {
+    const m = Math.floor(timerLeft / 60);
+    const s = timerLeft % 60;
+    text.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    const offset = circumference * (1 - timerLeft / timerTotal);
+    ring.style.strokeDashoffset = offset;
+
+    if (timerLeft <= 10) {
+      text.classList.add('text-rose-400');
+      text.classList.remove('text-yellow-300');
+    } else {
+      text.classList.add('text-yellow-300');
+      text.classList.remove('text-rose-400');
+    }
+
+    if (timerLeft <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      text.textContent = '⏰ 종료!';
+      ring.style.strokeDashoffset = circumference;
+      stopBtn.classList.add('hidden');
+      // 자동으로 시장 잠금
+      dbRef().update({ status: 'locked' });
+      alert('⏰ 거래 시간이 종료되었습니다! 자동으로 거래가 마감됩니다.');
+      show('result');
+    }
+    timerLeft--;
+  }
+
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('timerDisplay').classList.add('hidden');
+  document.getElementById('timerDisplay').classList.remove('flex');
+  document.getElementById('btnTimerStop').classList.add('hidden');
+}
+
+document.querySelectorAll('.timerBtn').forEach(btn => {
+  btn.onclick = () => {
+    if (!state.started || state.status !== 'trading') {
+      return alert('라운드를 먼저 시작(거래 활성화)한 후 타이머를 설정하세요.');
+    }
+    startTimer(parseInt(btn.dataset.sec));
+  };
+});
+document.getElementById('btnTimerStop').onclick = stopTimer;
+
+/* ══════════════════════════════════════
+   미니게임 라운드 로직
+══════════════════════════════════════ */
+const MINI_GAME_MSGS = {
+  '369게임': '각 모둠에서 대표 한 명씩 나오세요!\n\n🔢 369 게임\n1부터 숫자를 세다가 3·6·9가 들어가면 박수!\n틀리거나 늦으면 탈락, 마지막 남은 모둠이 승리!',
+  '눈치게임': '각 모둠에서 대표 한 명씩 나오세요!\n\n👀 눈치 게임\n1~6 중 아무 숫자나 외치되, 같은 숫자를 외친 팀은 탈락!\n마지막까지 살아남은 모둠이 승리!',
+  'OX퀴즈': '각 모둠에서 대표 한 명씩 나오세요!\n\n⭕ 경제 OX 퀴즈\n선생님이 주식·경제 문제를 낼게요.\nO면 오른쪽, X면 왼쪽으로 이동!\n마지막까지 맞춘 모둠이 승리!',
+  '초성퀴즈': '각 모둠에서 대표 한 명씩 나오세요!\n\n🔤 경제 초성 퀴즈\n선생님이 경제 용어 초성을 보여주면 먼저 외친 모둠이 점수!\n가장 많이 맞춘 모둠이 승리!',
+  '숫자협상': '모둠원 전원이 참여해요!\n\n🎯 숫자 협상 게임\n모둠원이 상의해서 1~100 사이 숫자를 하나 고르세요.\n선생님이 공개하는 정답 숫자에 가장 가까운 모둠 승리!',
+  '직접입력': '선생님이 미니게임을 진행합니다. 안내에 따라주세요!'
+};
+
+let selectedMiniGame = null;
+let selectedWinner = null;
+
+function renderMiniGameScreen() {
+  // 팀 버튼 렌더링
+  const winnerBtns = document.getElementById('winnerBtns');
+  winnerBtns.innerHTML = state.teams.map(t => `
+    <button class="winnerBtn btn py-3 rounded-2xl font-black text-sm glass border border-white/10" data-team="${t.name}">${t.name}</button>
+  `).join('');
+
+  document.querySelectorAll('.winnerBtn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.winnerBtn').forEach(b => {
+        b.classList.remove('bg-yellow-400','text-slate-950');
+        b.classList.add('glass');
+      });
+      btn.classList.add('bg-yellow-400','text-slate-950');
+      btn.classList.remove('glass');
+      selectedWinner = btn.dataset.team;
+    };
+  });
+
+  // 게임 선택 버튼
+  document.querySelectorAll('.minigame-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.minigame-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedMiniGame = btn.dataset.game;
+
+      // 직접 입력이면 인풋 표시
+      const customWrap = document.getElementById('customGameWrap');
+      if (selectedMiniGame === '직접입력') {
+        customWrap.classList.remove('hidden');
+      } else {
+        customWrap.classList.add('hidden');
+      }
+
+      // 학생 화면에 미니게임 안내 Firebase 전송
+      const msg = MINI_GAME_MSGS[selectedMiniGame] || MINI_GAME_MSGS['직접입력'];
+      const gameName = selectedMiniGame === '직접입력'
+        ? (document.getElementById('customGameName').value || '미니게임')
+        : selectedMiniGame;
+
+      document.getElementById('miniGameStudentMsg').textContent = `학생 화면에 "${gameName}" 안내가 전송되었습니다.`;
+      dbRef().update({
+        miniGame: { name: gameName, msg: msg },
+        status: 'minigame'
+      });
+    };
+  });
+
+  document.getElementById('customGameName').oninput = () => {
+    if (selectedMiniGame !== '직접입력') return;
+    const name = document.getElementById('customGameName').value || '미니게임';
+    dbRef().update({ miniGame: { name, msg: MINI_GAME_MSGS['직접입력'] } });
+  };
+}
+
+// 보상 버튼들
+let rewardMode = null;
+document.getElementById('rewardHint').onclick = () => { rewardMode = 'hint'; highlightReward('hint'); };
+document.getElementById('rewardCash').onclick = () => {
+  rewardMode = 'cash';
+  highlightReward('cash');
+  document.getElementById('cashAmountWrap').classList.remove('hidden');
+};
+document.getElementById('rewardBoth').onclick = () => {
+  rewardMode = 'both';
+  highlightReward('both');
+  document.getElementById('cashAmountWrap').classList.remove('hidden');
+};
+
+function highlightReward(mode) {
+  ['rewardHint','rewardCash','rewardBoth'].forEach(id => {
+    document.getElementById(id).style.opacity = '0.5';
+  });
+  document.getElementById('reward' + mode.charAt(0).toUpperCase() + mode.slice(1)).style.opacity = '1';
+}
+
+document.getElementById('btnApplyMiniCash').onclick = () => {
+  if (!selectedWinner) return alert('1등 모둠을 먼저 선택해주세요!');
+  const amount = parseInt(document.getElementById('miniCashAmount').value) || 200000;
+  dbRef().child('cash').child(selectedWinner).transaction(cur => (cur ?? 1000000) + amount, (err, comm) => {
+    if (comm) alert(`💰 ${selectedWinner}에게 ${amount.toLocaleString()}원 보너스 지급 완료!`);
+  });
+};
+
+document.getElementById('btnMiniDone').onclick = () => {
+  if (!selectedWinner && rewardMode) return alert('1등 모둠을 선택해주세요!');
+
+  // 보상 처리
+  if (rewardMode === 'hint' || rewardMode === 'both') {
+    if (!state.currentSecretThisRound && state.currentNews.length) {
+      // 랜덤 시크릿 뽑기
+      state.currentSecretThisRound = shuffle(SECRET_POOL)[0];
+    }
+    if (state.currentSecretThisRound && selectedWinner) {
+      dbRef().child('secretNews').child(selectedWinner).set(state.currentSecretThisRound.text);
+    }
+  }
+  if ((rewardMode === 'cash' || rewardMode === 'both') && selectedWinner) {
+    const amount = parseInt(document.getElementById('miniCashAmount').value) || 200000;
+    dbRef().child('cash').child(selectedWinner).transaction(cur => (cur ?? 1000000) + amount);
+  }
+
+  // 미니게임 종료 → 다음 라운드 시작
+  dbRef().update({ status: 'ready', miniGame: null });
+  selectedMiniGame = null;
+  selectedWinner = null;
+  rewardMode = null;
+  show('host');
+  alert('🎉 미니게임 완료! 다음 라운드를 시작하세요.');
+};
+
+document.getElementById('btnMiniSkip').onclick = () => {
+  dbRef().update({ status: 'ready', miniGame: null });
+  show('host');
+};
+
 document.getElementById('btnCloseTvModal').onclick = () => {
   document.getElementById('tvNewsModal').classList.add('hidden');
 };
@@ -961,8 +1339,6 @@ document.getElementById('btnCloseTvModal').onclick = () => {
 /* ══════════════════════════════════════
    나머지 핵심 제어 바인딩
 ══════════════════════════════════════ */
-const SCREENS=['select','roster','lobby','host','student','result'];
-
 document.querySelectorAll('.classBtn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.classBtn').forEach(b=>{b.classList.remove('bg-yellow-400','text-slate-950');b.classList.add('bg-white/10');});
@@ -1021,9 +1397,31 @@ document.getElementById('btnRoundEnd').onclick=()=>{
 
 document.getElementById('btnNextDay').onclick=()=>{ 
   if(confirm('밤사이 주가 시뮬레이션을 돌려 다음 라운드로 정산할까요?')) {
-    applyDayChange(); 
-    show('host'); 
-    alert('🎲 밤사이 주가 파동 정산 및 다음날 변동이 정상 완료되었습니다!');
+    applyDayChange().then(() => {
+      stopTimer();
+      // 2라운드마다(짝수 라운드 직후) 미니게임 진입
+      // applyDayChange 후 round가 올라간 상태이므로 새 라운드가 홀수이면 미니게임
+      // 즉 2→3(홀), 4→5(홀) ... 이면 미니게임
+      dbRef().get().then(snap => {
+        const newRound = snap.val()?.round ?? state.round;
+        if (newRound % 2 === 1 && newRound > 1) {
+          // 미니게임 라운드!
+          selectedMiniGame = null; selectedWinner = null; rewardMode = null;
+          document.querySelectorAll('.minigame-btn').forEach(b => b.classList.remove('selected'));
+          document.getElementById('cashAmountWrap').classList.add('hidden');
+          document.getElementById('customGameWrap').classList.add('hidden');
+          document.getElementById('miniGameStudentMsg').textContent = '게임을 선택하면 학생 화면에 안내 메시지가 자동으로 표시됩니다.';
+          ['rewardHint','rewardCash','rewardBoth'].forEach(id => document.getElementById(id).style.opacity = '1');
+          renderMiniGameScreen();
+          dbRef().update({ status: 'minigame', miniGame: { name: '?', msg: '' } });
+          show('minigame');
+          alert(`🎮 ${newRound-1}라운드 완료! 미니게임 타임입니다!`);
+        } else {
+          show('host');
+          alert('🎲 밤사이 주가 파동 정산 및 다음날 변동이 정상 완료되었습니다!');
+        }
+      });
+    });
   }
 };
 document.getElementById('btnBackHost').onclick=()=>show('host');
