@@ -98,7 +98,7 @@
         <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
           <div>
             <h2 class="text-2xl md:text-3xl font-black"><span id="rosterLabel">-반</span> 명단 입력</h2>
-            <p class="text-slate-300 text-sm mt-1">이름을 줄바꿈으로 입력하면 균등하게 6개 팀으로 배정됩니다.</p>
+            <p class="text-slate-300 text-sm mt-1">이름을 줄바꿈, 쉼표, 또는 띄어쓰기로 입력하면 균등하게 6개 팀으로 배정됩니다.</p>
           </div>
           <div class="flex gap-2">
             <button id="btnBackSelect" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
@@ -107,8 +107,8 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
-            <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단</label>
-            <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예시)&#10;김민준&#10;이서연&#10;박지후"></textarea>
+            <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단 입력</label>
+            <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예시 1) 엔터 분리&#10;김민준&#10;이서연&#10;박지후&#10;&#10;예시 2) 쉼표 나열&#10;김민준, 이서연, 박지후"></textarea>
           </div>
           <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
             <div class="flex items-center justify-between mb-4">
@@ -425,29 +425,19 @@ const STOCKS = [
   {name:'기흥바이오', sector:'바이오', price:92000}
 ];
 
-/* ══════════ 무작위 독립 뉴스 풀 ══════════ */
 const RANDOM_NEWS_POOL = {
   up: [
     { title: "신규 특허 취득 완료", text: "경쟁사를 압도하는 혁신 기술 특허 취득으로 글로벌 시장 점유율 확대가 뚜렷하게 전망됩니다." },
     { title: "시장 예상을 깬 어닝 서프라이즈", text: "전문가들의 예상치를 훌쩍 뛰어넘는 분기 최대 영업이익을 달성하며 흑자 폭을 크게 넓혔습니다." },
     { title: "빅테크 기업과 초대형 파트너십", text: "글로벌 굴지의 테크 기업과 장기 파트너십 체결을 공식 발표하며 안정적인 캐시카우를 확보했습니다." },
     { title: "정부 대규모 지원 사업 최종 선정", text: "국가 핵심 육성 산업 지원금 대상 기업으로 최종 선정되어 막대한 연구 개발 자금을 확보했습니다." },
-    { title: "경쟁사 몰락으로 인한 반사이익", text: "업계 라이벌 기업의 부도로 인해 시장의 독점적 지위를 확보하게 될 것이라는 분석이 쏟아지고 있습니다." },
-    { title: "신제품 출시 첫날 전량 완판", text: "야심 차게 내놓은 신제품이 소비자들의 폭발적 반응을 이끌어내며 출시와 동시에 전량 완판되었습니다." },
-    { title: "외국인/기관 대규모 쌍끌이 매수", text: "해외 대형 기관 투자자들의 공격적인 매수세가 유입되며 유동성이 폭발하고 있습니다." },
-    { title: "전사적 비용 절감 대성공", text: "내부 시스템 효율화를 통한 비용 절감이 성공적으로 이루어져 영업 이익률이 급증했습니다." },
-    { title: "해외 수출 물량 300% 폭증", text: "주력 상품이 SNS를 통해 글로벌 트렌드로 자리 잡으며 수출 물량이 전년 대비 3배 이상 폭증했습니다." },
-    { title: "자회사 상장 대박 행진", text: "핵심 자회사가 성공적으로 증시에 입성하며 모회사가 엄청난 투자 수익과 현금 유동성을 확보했습니다." }
+    { title: "경쟁사 몰락으로 인한 반사이익", text: "업계 라이벌 기업의 부도로 인해 시장의 독점적 지위를 확보하게 될 것이라는 분석이 쏟아지고 있습니다." }
   ],
   down: [
     { title: "핵심 기술 유출로 압수수색", text: "산업 스파이에 의한 핵심 기술 유출 정황이 포착되어 당국의 강도 높은 압수수색이 진행 중입니다." },
     { title: "주력 제품 치명적 결함 발견", text: "소비자 안전에 직결되는 치명적인 결함이 발견되어 전 세계적인 대규모 리콜 사태에 직면했습니다." },
     { title: "충격적인 어닝 쇼크 기록", text: "매출과 영업이익이 전년 동기 대비 반토막 나며 충격적인 적자 전환을 기록했습니다." },
-    { title: "경영진 수백억 대 횡령 혐의", text: "현직 대표이사의 거액 횡령 및 배임 혐의가 드러나며 상장폐지 실질심사 위기에 처했습니다." },
-    { title: "주요 수출국 관세 폭탄 조치", text: "최대 수출 대상국의 갑작스러운 보호무역 조치와 관세 폭탄으로 마진율이 급감하고 있습니다." },
-    { title: "신규 사업 전면 백지화", text: "수년간 천문학적인 자금을 쏟아부은 신제품 개발이 전면 취소되며 거액의 매몰 비용이 발생했습니다." },
-    { title: "기관 투자자 대량 이탈", text: "회사 전망에 실망한 대형 펀드와 기관들이 막대한 물량을 던지며 주가 방어선이 붕괴되었습니다." },
-    { title: "시장 점유율 1위 탈락", text: "경쟁사의 혁신적 신제품에 완전히 밀리며 10년간 지켜오던 시장 점유율 1위 자리를 내줬습니다." }
+    { title: "경영진 수백억 대 횡령 혐의", text: "현직 대표이사의 거액 횡령 및 배임 혐의가 드러나며 상장폐지 실질심사 위기에 처했습니다." }
   ]
 };
 
@@ -475,6 +465,10 @@ const pClass = urlParams.get('c');
 const pTeam = urlParams.get('t');
 
 window.onload = function() {
+  // 1. 순서 변경: 버튼 클릭 이벤트 바인딩을 무조건 최우선 처리 (마비 사태 원천 차단)
+  setupDOMEvents();
+
+  // 2. 이후 파이어베이스 및 반 로직 연계 처리
   if(pClass && pTeam) {
     state.selectedClass = pClass;
     state.teamName = pTeam + '팀';
@@ -491,7 +485,6 @@ window.onload = function() {
   } else {
     initClassSelectInterface();
   }
-  setupDOMEvents();
 };
 
 function assignFirebaseNode(cls) {
@@ -566,7 +559,7 @@ function initFirebaseSync() {
         const mSBox = document.getElementById('mgStuSecretBox');
         if(state.miniWinner === state.teamName && state.hintStock) {
           mSBox.classList.remove('hidden');
-          document.getElementById('mgStuSecretText').innerText = `[우승 특별 보상] 3라운드 정산 대비 힌트:\n다음 주가 반영 시 【${state.hintStock}】 종목이 시장의 상하락 한계를 완전히 부수고 초대형 ${state.hintDirection==='up'?'폭등(🔥)':'폭락(📉)'} 구조를 강제 반영시킵니다. 미리 선점하세요!`;
+          document.getElementById('mgStuSecretText').innerText = `[우승 특별 보상] 3라운드 정산 대비 힌트:\n다음 주가 반영 시 【${state.hintStock}】 종목이 시장의 한계를 완전히 부수고 초대형 ${state.hintDirection==='up'?'폭등(🔥)':'폭락(📉)'} 구조를 강제 반영시킵니다. 미리 선점하세요!`;
         } else {
           mSBox.classList.add('hidden');
         }
@@ -698,7 +691,6 @@ function generateBalancedNewsAndPrices() {
   });
 }
 
-/* ══════════ DOM 이벤트 핸들러 (수정 완료) ══════════ */
 function setupDOMEvents() {
   document.getElementById('btnEnterClass').onclick = () => {
     if(!state.selectedClass) return alert('진행할 학급(반)을 먼저 탭하여 활성화하세요.');
@@ -727,7 +719,6 @@ function setupDOMEvents() {
   document.getElementById('btnBackSelect').onclick = () => switchScreen('screen-select');
   document.getElementById('btnBackRoster').onclick = () => switchScreen('screen-roster');
 
-  // 에러를 유발하던 고스트 라인(btnToLobby) 제거 및 정상화 완료
   document.getElementById('btnGoLobby').onclick = () => {
     if(!state.tempTeams) return alert('팀 배정이 선행되지 않았습니다.');
     
@@ -753,13 +744,23 @@ function setupDOMEvents() {
     });
   };
 
+  // ★★★ [수정 완료] 인공지능형 이름 분리 로직 탑재 ★★★
   document.getElementById('btnAssign').onclick = () => {
     const text = document.getElementById('studentInput').value.trim();
     if(!text) return alert('학생들의 명단을 정확히 입력하세요.');
     
-    // 엔터(줄바꿈) 기준으로 분리
-    const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-    if(names.length < 6) return alert('6개 모둠 구성을 위해 최소 명단이 6명 이상이어야 합니다. (이름 입력 시 쉼표가 아닌 엔터 키로 줄바꿈을 해주세요)');
+    // 엔터(줄바꿈)와 쉼표(,)를 기준으로 먼저 분리
+    let names = text.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
+    
+    // 만약 한 줄에 공백(띄어쓰기)으로만 나열했을 경우 대비하여 2차 분리
+    if (names.length === 1 && names[0].includes(' ')) {
+      names = names[0].split(/\s+/).map(n => n.trim()).filter(n => n.length > 0);
+    }
+
+    // 디버깅 및 보호 조건
+    if(names.length < 6) {
+      return alert(`현재 입력에서 인식된 학생 수가 ${names.length}명입니다.\n6개 모둠으로 고르게 배정하려면 최소 6명 이상의 이름을 적어주셔야 합니다. (띄어쓰기, 쉼표, 줄바꿈 등으로 이름을 구분해 주세요.)`);
+    }
 
     names.sort(() => Math.random() - 0.5);
     
@@ -892,10 +893,12 @@ function setupDOMEvents() {
   };
 
   const sSel = document.getElementById('secretSelect');
-  sSel.innerHTML = STOCKS.map(s => `
-    <option value="[특급 정보] 내부 거래 소식에 근거해 ${s.name}의 해외 가치 평가액이 기하급수적으로 폭등할 예고가 전해집니다.">[호재 찌라시] ${s.name}</option>
-    <option value="[위험 정보] 비밀 분쟁 합의금 소송 패소 예고로 ${s.name}의 투자 안전 등급이 하향될 위기에 놓였습니다.">[악재 찌라시] ${s.name}</option>
-  `).join('');
+  if (sSel) {
+    sSel.innerHTML = STOCKS.map(s => `
+      <option value="[특급 정보] 내부 거래 소식에 근거해 ${s.name}의 해외 가치 평가액이 기하급수적으로 폭등할 예고가 전해집니다.">[호재 찌라시] ${s.name}</option>
+      <option value="[위험 정보] 비밀 분쟁 합의금 소송 패소 예고로 ${s.name}의 투자 안전 등급이 하향될 위기에 놓였습니다.">[악재 찌라시] ${s.name}</option>
+    `).join('');
+  }
 
   document.getElementById('btnSendSecret').onclick = () => {
     const team = document.getElementById('targetTeamSelect').value;
@@ -914,7 +917,9 @@ function setupDOMEvents() {
   };
 
   const stMod = document.getElementById('stockSelectMod');
-  stMod.innerHTML = STOCKS.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('');
+  if (stMod) {
+    stMod.innerHTML = STOCKS.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('');
+  }
 
   document.getElementById('btnApplyStockMod').onclick = () => {
     const team = document.getElementById('targetTeamSelect').value;
