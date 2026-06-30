@@ -425,7 +425,7 @@ const STOCKS = [
   {name:'기흥바이오', sector:'바이오', price:92000}
 ];
 
-/* ══════════ 무작위 독립 뉴스 풀 (스토리 없음, 라운드 무관) ══════════ */
+/* ══════════ 무작위 독립 뉴스 풀 ══════════ */
 const RANDOM_NEWS_POOL = {
   up: [
     { title: "신규 특허 취득 완료", text: "경쟁사를 압도하는 혁신 기술 특허 취득으로 글로벌 시장 점유율 확대가 뚜렷하게 전망됩니다." },
@@ -437,9 +437,7 @@ const RANDOM_NEWS_POOL = {
     { title: "외국인/기관 대규모 쌍끌이 매수", text: "해외 대형 기관 투자자들의 공격적인 매수세가 유입되며 유동성이 폭발하고 있습니다." },
     { title: "전사적 비용 절감 대성공", text: "내부 시스템 효율화를 통한 비용 절감이 성공적으로 이루어져 영업 이익률이 급증했습니다." },
     { title: "해외 수출 물량 300% 폭증", text: "주력 상품이 SNS를 통해 글로벌 트렌드로 자리 잡으며 수출 물량이 전년 대비 3배 이상 폭증했습니다." },
-    { title: "자회사 상장 대박 행진", text: "핵심 자회사가 성공적으로 증시에 입성하며 모회사가 엄청난 투자 수익과 현금 유동성을 확보했습니다." },
-    { title: "대규모 무상증자 전격 결정", text: "주주 가치 제고를 위한 1:1 무상증자와 파격적인 배당금 확대를 발표했습니다." },
-    { title: "최고의 직장 1위 선정", text: "압도적인 사내 복지와 인재 영입으로 업계 최고의 연구 인력을 싹쓸이하고 있습니다." }
+    { title: "자회사 상장 대박 행진", text: "핵심 자회사가 성공적으로 증시에 입성하며 모회사가 엄청난 투자 수익과 현금 유동성을 확보했습니다." }
   ],
   down: [
     { title: "핵심 기술 유출로 압수수색", text: "산업 스파이에 의한 핵심 기술 유출 정황이 포착되어 당국의 강도 높은 압수수색이 진행 중입니다." },
@@ -449,11 +447,7 @@ const RANDOM_NEWS_POOL = {
     { title: "주요 수출국 관세 폭탄 조치", text: "최대 수출 대상국의 갑작스러운 보호무역 조치와 관세 폭탄으로 마진율이 급감하고 있습니다." },
     { title: "신규 사업 전면 백지화", text: "수년간 천문학적인 자금을 쏟아부은 신제품 개발이 전면 취소되며 거액의 매몰 비용이 발생했습니다." },
     { title: "기관 투자자 대량 이탈", text: "회사 전망에 실망한 대형 펀드와 기관들이 막대한 물량을 던지며 주가 방어선이 붕괴되었습니다." },
-    { title: "시장 점유율 1위 탈락", text: "경쟁사의 혁신적 신제품에 완전히 밀리며 10년간 지켜오던 시장 점유율 1위 자리를 내줬습니다." },
-    { title: "불법 하도급 및 환경 오염 논란", text: "심각한 환경 오염 유발 및 불법 하도급 논란으로 거액의 과징금 부과와 불매운동이 확산되고 있습니다." },
-    { title: "핵심 연구 인력 단체 퇴사", text: "열악한 처우와 경영진과의 마찰로 핵심 인재들이 경쟁사로 단체 이직하며 성장 동력을 상실했습니다." },
-    { title: "무리한 기업 인수 후폭풍", text: "과도한 빚을 내어 무리하게 추진한 기업 인수가 승자의 저주로 돌아와 심각한 자금난을 겪고 있습니다." },
-    { title: "대규모 소송 1심 전면 패소", text: "글로벌 특허 침해 소송에서 패소하여 회사 시가총액에 맞먹는 배상금을 물어주게 생겼습니다." }
+    { title: "시장 점유율 1위 탈락", text: "경쟁사의 혁신적 신제품에 완전히 밀리며 10년간 지켜오던 시장 점유율 1위 자리를 내줬습니다." }
   ]
 };
 
@@ -647,20 +641,16 @@ function switchScreen(id) {
   window.scrollTo(0,0);
 }
 
-/* ══════════ 무작위 이벤트 추출 및 주가 연동 엔진 ══════════ */
 function generateBalancedNewsAndPrices() {
   if (!state.stocks || state.stocks.length === 0) {
     state.stocks = JSON.parse(JSON.stringify(STOCKS));
   }
-
-  // 10종목 섞어서 5개 오름, 5개 내림 지정
   let indices = [0,1,2,3,4,5,6,7,8,9];
   indices.sort(() => Math.random() - 0.5);
 
   let upStocks = indices.slice(0, 5);
   let downStocks = indices.slice(5, 10);
 
-  // 헤드라인 장식할 4개 무작위 선택
   let newsUpStocks = upStocks.slice(0, 2);
   let newsDownStocks = downStocks.slice(0, 2);
   let headlineIndices = [...newsUpStocks, ...newsDownStocks];
@@ -672,15 +662,12 @@ function generateBalancedNewsAndPrices() {
     const sName = state.stocks[idx].name;
     const targetDir = upStocks.includes(idx) ? 'up' : 'down';
     
-    // 무작위 뉴스 풀에서 하나 가져오기
     let newsPool = targetDir === 'up' ? RANDOM_NEWS_POOL.up : RANDOM_NEWS_POOL.down;
     let selectedNews = newsPool[Math.floor(Math.random() * newsPool.length)];
     
-    // 변동폭: 기본적으로 5% ~ 30% 사이에서 무작위 변동
     let rate = 0.05 + Math.random() * 0.25;
     if(targetDir === 'down') rate = -rate;
 
-    // 미니게임 힌트 발동 시 극단적 변동폭 오버라이드
     if(state.round === 3 && state.hintStock === sName) {
       if(state.hintDirection === 'up') {
         rate = 0.65;
@@ -691,33 +678,27 @@ function generateBalancedNewsAndPrices() {
       }
     }
 
-    // 주가 계산
     let newPrice = Math.floor(state.stocks[idx].price * (1 + rate));
     if(newPrice < 5000) newPrice = 5000;
     state.stocks[idx].price = newPrice;
 
-    // 헤드라인에 포함되었다면 뉴스 배열에 푸시
     if(headlineIndices.includes(idx)) {
       chosenNews.push({
         stock: sName,
-        dir: targetDir, // 데이터 보관용
+        dir: targetDir,
         title: `[이슈] ${sName}, ${selectedNews.title}`,
-        text: `${sName} 관련 소식입니다.\n\n${selectedNews.text}\n전문가들은 이 이슈가 시장의 투자 심리에 큰 영향을 미칠 것으로 내다봤습니다.`
+        text: `${sName} 관련 소식입니다.\n\n${selectedNews.text}`
       });
     }
   }
 
-  // DB에 저장
   const currentDbRef = db.ref(`games/class_${state.selectedClass}`);
   currentDbRef.child('stocks').set(state.stocks).then(() => {
     currentDbRef.child('meta/currentNews').set(chosenNews);
-  }).catch(error => {
-    console.error("데이터 저장 실패:", error);
-    alert('오류: 주가를 저장하지 못했습니다.');
   });
 }
 
-/* ══════════ DOM 이벤트 핸들러 및 버튼 통제 ══════════ */
+/* ══════════ DOM 이벤트 핸들러 (수정 완료) ══════════ */
 function setupDOMEvents() {
   document.getElementById('btnEnterClass').onclick = () => {
     if(!state.selectedClass) return alert('진행할 학급(반)을 먼저 탭하여 활성화하세요.');
@@ -745,13 +726,40 @@ function setupDOMEvents() {
 
   document.getElementById('btnBackSelect').onclick = () => switchScreen('screen-select');
   document.getElementById('btnBackRoster').onclick = () => switchScreen('screen-roster');
-  document.getElementById('btnToLobby').onclick = () => { buildQrGrid(); switchScreen('screen-lobby'); };
+
+  // 에러를 유발하던 고스트 라인(btnToLobby) 제거 및 정상화 완료
+  document.getElementById('btnGoLobby').onclick = () => {
+    if(!state.tempTeams) return alert('팀 배정이 선행되지 않았습니다.');
+    
+    const initialMeta = {
+      round: 1,
+      marketOpen: false,
+      isMiniGameTime: false,
+      miniGameName: "",
+      miniWinner: "",
+      hintStock: "",
+      hintDirection: ""
+    };
+
+    db.ref(`games/class_${state.selectedClass}`).remove().then(() => {
+      metaRef.set(initialMeta);
+      stocksRef.set(STOCKS);
+      teamsRef.set(state.tempTeams).then(() => {
+        state.isHost = true;
+        initFirebaseSync();
+        buildQrGrid();
+        switchScreen('screen-lobby');
+      });
+    });
+  };
 
   document.getElementById('btnAssign').onclick = () => {
     const text = document.getElementById('studentInput').value.trim();
     if(!text) return alert('학생들의 명단을 정확히 입력하세요.');
+    
+    // 엔터(줄바꿈) 기준으로 분리
     const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-    if(names.length < 6) return alert('6개 모둠 구성을 위해 최소 6명 이상이 필요합니다.');
+    if(names.length < 6) return alert('6개 모둠 구성을 위해 최소 명단이 6명 이상이어야 합니다. (이름 입력 시 쉼표가 아닌 엔터 키로 줄바꿈을 해주세요)');
 
     names.sort(() => Math.random() - 0.5);
     
@@ -779,33 +787,8 @@ function setupDOMEvents() {
     state.tempTeams = dbTeams;
   };
 
-  document.getElementById('btnGoLobby').onclick = () => {
-    if(!state.tempTeams) return alert('팀 배정이 선행되지 않았습니다.');
-    
-    const initialMeta = {
-      round: 1,
-      marketOpen: false,
-      isMiniGameTime: false,
-      miniGameName: "",
-      miniWinner: "",
-      hintStock: "",
-      hintDirection: ""
-    };
-
-    db.ref(`games/class_${state.selectedClass}`).remove().then(() => {
-      metaRef.set(initialMeta);
-      stocksRef.set(STOCKS);
-      teamsRef.set(state.tempTeams).then(() => {
-        state.isHost = true;
-        initFirebaseSync();
-        buildQrGrid();
-        switchScreen('screen-lobby');
-      });
-    });
-  };
-
   document.getElementById('btnStartGame').onclick = () => {
-    generateBalancedNewsAndPrices(); // 1라운드 최초 세팅
+    generateBalancedNewsAndPrices();
     switchScreen('screen-host');
   };
 
@@ -817,14 +800,13 @@ function setupDOMEvents() {
     stopTimer();
   };
 
-  // 다음날 반영 버튼 클릭
   document.getElementById('btnNextDay').onclick = () => {
     if(state.marketOpen) return alert('반드시 [거래 마감 (시장 정지)] 처리를 진행한 후 다음 주가를 산출해야 합니다.');
     
     showRankingScreen();
 
     if(state.round === 2) {
-      alert('2라운드가 마감되었습니다! 3~4차시 연속 장기 수업의 흐름을 대폭 활성화시키기 위해 [미니게임 특별 보상 배포 페이지]로 자동 진입합니다.');
+      alert('2라운드가 마감되었습니다! 미니게임 특별 보상 배포 페이지로 자동 진입합니다.');
       openMiniGameManager();
       return;
     }
@@ -832,11 +814,10 @@ function setupDOMEvents() {
     const nextRound = state.round + 1;
     db.ref(`games/class_${state.selectedClass}/meta/round`).set(nextRound).then(() => {
       generateBalancedNewsAndPrices();
-      alert(`${nextRound}라운드가 시작되며, 주가 변동 및 새로운 핵심 이슈 4개가 무작위로 등장했습니다!`);
+      alert(`${nextRound}라운드가 시작되었으며, 독립적 이슈 4개가 무작위 추출되었습니다!`);
     });
   };
 
-  // [신규 기능] 게임 조기/강제 종료 버튼
   document.getElementById('btnEndGameEarly').onclick = () => {
     if(confirm('정말로 게임을 이대로 완전히 종료하고 최종 순위 결과를 띄우시겠습니까?')) {
       metaRef.update({ marketOpen: false });
@@ -849,7 +830,6 @@ function setupDOMEvents() {
 
   document.getElementById('btnMiniDone').onclick = () => {
     if(!mgSelectedWinner) return alert('우승을 거머쥔 1등 모둠 배정이 선택되지 않았습니다.');
-    
     const tNum = mgSelectedWinner.replace('모둠','').replace('팀','').trim();
     
     if(mgSelectedReward === 'hint' || mgSelectedReward === 'both') {
@@ -863,7 +843,7 @@ function setupDOMEvents() {
         hintDirection: targetDir
       });
       
-      db.ref(`games/class_${state.selectedClass}/teams/${tNum}/secretMessage`).set(`[미니게임 특권 획득 완수!] 돌아올 3라운드 최종 주가 변동 연계표 적용 시 【${targetStock}】 종목이 시장의 한계를 뚫어버리고 무조건 초대형 ${targetDir==='up'?'폭등(🔥)':'폭락(📉)'}으로 주저앉거나 날아오릅니다. 남은 시장이 열리는 즉시 전략적 올인을 고려하세요!`);
+      db.ref(`games/class_${state.selectedClass}/teams/${tNum}/secretMessage`).set(`[미니게임 특권 획득 완수!] 돌아올 3라운드 최종 주가 변동 연계표 적용 시 【${targetStock}】 종목이 시장의 한계를 뚫어버리고 무조건 초대형 ${targetDir==='up'?'폭등(🔥)':'폭락(📉)'}으로 날아오릅니다. 남은 시장이 열리는 즉시 전략적 매매를 고려하세요!`);
     }
 
     if(mgSelectedReward === 'cash' || mgSelectedReward === 'both') {
@@ -888,7 +868,7 @@ function setupDOMEvents() {
   document.getElementById('btnTimerStop').onclick = () => stopTimer();
 
   document.getElementById('btnShuffleNews').onclick = () => {
-    if(confirm('새로운 무작위 뉴스 4개로 다시 뽑으시겠습니까? (주가도 뉴스에 맞게 변동됩니다)')) {
+    if(confirm('새로운 무작위 뉴스 4개로 다시 뽑으시겠습니까?')) {
       generateBalancedNewsAndPrices();
     }
   };
@@ -903,7 +883,7 @@ function setupDOMEvents() {
 
   document.getElementById('btnReset').onclick = () => {
     if(!state.selectedClass) return alert('지정된 학급이 누락되었습니다.');
-    if(confirm(`⚠️ 진짜로 [${state.selectedClass}반]의 실시간 자산 원장, 매칭 명단, 라운드 전체를 파괴하여 완전 무(無)의 상태로 되돌리시겠습니까?`)) {
+    if(confirm(`⚠️ 진짜로 [${state.selectedClass}반]의 실시간 자산 전체 데이터를 포맷하시겠습니까?`)) {
       db.ref(`games/class_${state.selectedClass}`).remove().then(() => {
         alert('완전 초기화 처리가 수행되었습니다.');
         location.reload();
@@ -944,11 +924,6 @@ function setupDOMEvents() {
     db.ref(`games/class_${state.selectedClass}/teams/${team}/inventory/${sIdx}`).transaction(q => (q || 0) + qty);
     alert('보유 주식 인벤토리 강제 변경 수정 완료');
   };
-
-  document.getElementById('btnStuRefresh').onclick = () => {
-    alert('파이어베이스 실시간 동기화 라인을 재생성했습니다.');
-    initFirebaseSync();
-  };
 }
 
 function startTimer(duration) {
@@ -975,7 +950,7 @@ function startTimer(duration) {
     if (--timer < 0) {
       stopTimer();
       metaRef.child('marketOpen').set(false);
-      alert('⏱ 설정된 장 마감 제한 시간이 도래하여 전체 모둠의 주문서 접수가 안전하게 자동 통제되었습니다.');
+      alert('⏱ 설정된 장 마감 제한 시간이 도래하여 주문 접수가 마감되었습니다.');
     }
   }, 1000);
 }
@@ -986,11 +961,10 @@ function stopTimer() {
   document.getElementById('btnTimerStop').style.removeProperty('display');
 }
 
-// 힌트가 제거된 중립적 디자인 뉴스를 띄웁니다.
 function renderHostNews() {
   const area = document.getElementById('newsArea');
   if(!state.currentNews || state.currentNews.length === 0) {
-    area.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center">아직 갱신된 경제 뉴스가 없습니다. 시장 개장 시 헤드라인 뉴스가 분출됩니다.</div>`;
+    area.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center">아직 갱신된 경제 뉴스가 없습니다.</div>`;
     return;
   }
   
@@ -1162,7 +1136,7 @@ function renderStudentTradeUI() {
   const pureKey = state.teamName.replace('팀','');
   const myData = state.teams.find(t => t.name === state.teamName || t.name === pureKey + '팀');
   if(!myData) {
-    area.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">모둠 배정 정보를 실시간 수신 대기 중입니다...</div>';
+    area.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">모둠 정보를 수신 중입니다...</div>';
     return;
   }
 
