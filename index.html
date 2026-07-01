@@ -44,6 +44,16 @@
     .timer-ring{transition:stroke-dashoffset 1s linear;}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
     .blink{animation:blink 1s infinite;}
+    /* 🌙 주가 변동 리빌 화면 */
+    @keyframes cardPop{0%{opacity:0;transform:translateY(16px) scale(.95)}100%{opacity:1;transform:translateY(0) scale(1)}}
+    .reveal-card{animation:cardPop .5s cubic-bezier(.2,.9,.3,1.25) both;}
+    @keyframes pctPop{0%{transform:scale(.3);opacity:0}55%{transform:scale(1.18)}100%{transform:scale(1);opacity:1}}
+    .pct-pop{animation:pctPop .55s ease-out both;animation-delay:.35s;}
+    .reveal-up{border-color:rgba(248,113,113,.55)!important;box-shadow:0 0 0 1px rgba(248,113,113,.22),0 10px 34px rgba(248,113,113,.14);}
+    .reveal-down{border-color:rgba(96,165,250,.55)!important;box-shadow:0 0 0 1px rgba(96,165,250,.22),0 10px 34px rgba(96,165,250,.14);}
+    .reveal-flat{border-color:rgba(148,163,184,.4)!important;}
+    @keyframes bigGlow{from{box-shadow:0 0 18px rgba(251,191,36,.16)}to{box-shadow:0 0 36px rgba(251,191,36,.42)}}
+    .reveal-big{animation:cardPop .5s cubic-bezier(.2,.9,.3,1.25) both, bigGlow 1.3s ease-in-out infinite alternate .5s;}
   </style>
 </head>
 <body>
@@ -268,6 +278,29 @@
           <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 컨트롤 대시보드 복귀</button>
         </div>
         <div id="resultArea" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- 🌙 주가 변동 리빌 화면 (교사가 학생에게 보여주는 전광판) -->
+    <section id="screen-reveal" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500 text-white font-black text-sm mb-2">🌙 다음날 주가 반영</div>
+            <h2 id="revealTitle" class="text-2xl md:text-3xl font-black">주가 변동 전광판</h2>
+            <p id="revealDesc" class="text-slate-300 text-sm mt-1">장 마감 후 각 종목이 어떻게 변했는지 확인하세요.</p>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <div class="text-right">
+              <div id="revealSummary" class="text-sm font-black"></div>
+            </div>
+          </div>
+        </div>
+        <div id="revealArea" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4"></div>
+        <div class="mt-6 flex items-center justify-end gap-3 flex-wrap">
+          <button id="btnRevealRanking" class="btn px-5 py-3 rounded-2xl bg-white/10 font-black">📊 자산 순위 보기</button>
+          <button id="btnRevealNext" class="btn px-6 py-4 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg shadow-lg">▶ 다음 라운드 진행하기 →</button>
+        </div>
       </div>
     </section>
 
@@ -1001,10 +1034,10 @@ function setupDOMEvents() {
        alert('반드시 [거래 마감 (시장 정지)] 처리를 진행한 후 다음 주가를 산출해야 합니다.');
        return;
     }
-    
-    showRankingScreen();
 
+    // 2라운드 마감은 주가 반영 없이 미니게임으로 (기존 동작 유지)
     if(state.round === 2) {
+      showRankingScreen();
       alert('2라운드가 마감되었습니다! 미니게임 특별 보상 배포 페이지로 자동 진입합니다.');
       openMiniGameManager();
       return;
@@ -1012,9 +1045,22 @@ function setupDOMEvents() {
 
     const nextRound = state.round + 1;
     db.ref(`games/class_${state.selectedClass}/meta/round`).set(nextRound).then(() => {
+      // 주가 계산 (prevPrice 저장 + 신규 가격 반영)
       generateBalancedNewsAndPrices();
-      alert(`${nextRound}라운드가 시작되었으며, 독립적 이슈 4개가 무작위 추출되었습니다!`);
+      // ✅ 변동 결과를 한눈에 보여주는 리빌 화면으로 이동 (다음 라운드는 교사가 버튼을 눌러야 진행)
+      showPriceRevealScreen(nextRound);
     });
+  });
+
+  // 🌙 리빌 화면 - 다음 라운드 진행하기 (컨트롤 대시보드로 복귀)
+  bindBtn('btnRevealNext', () => {
+    switchScreen('screen-host');
+    alert(`${state.round}라운드가 시작되었습니다! 뉴스를 확인하고 [거래 개장]으로 시장을 열어주세요.`);
+  });
+
+  // 🌙 리빌 화면 - 자산 순위 먼저 보기 (선택)
+  bindBtn('btnRevealRanking', () => {
+    showRankingScreen();
   });
 
   bindBtn('btnEndGameEarly', () => {
@@ -1224,6 +1270,87 @@ function renderChartArea() {
       </div>
     `;
   }).join('');
+}
+
+// 🌙 [신규] 주가 변동 리빌 화면 - 각 종목의 이전가 → 현재가(+%)를 한눈에 보여줌
+function showPriceRevealScreen(dayNum) {
+  switchScreen('screen-reveal');
+
+  const stocks = state.stocks || [];
+  let upCount = 0, downCount = 0;
+
+  document.getElementById('revealTitle').innerText = `🌙 ${dayNum ? dayNum + '일차 ' : ''}주가 변동 결과`;
+  document.getElementById('revealDesc').innerText = '장 마감 후 밤사이 각 종목의 주가가 다음처럼 변했습니다.';
+
+  const cardsHtml = stocks.map((s, idx) => {
+    const oldP = (s.prevPrice && s.prevPrice > 0) ? s.prevPrice : s.price;
+    const newP = s.price;
+    const diff = newP - oldP;
+    const pct = oldP > 0 ? (diff / oldP) * 100 : 0;
+    const isBig = Math.abs(pct) >= 25;
+
+    let dir, cls, arrow, pctColor, sign, badge = '';
+    if (diff > 0) {
+      dir = 'up'; upCount++;
+      cls = isBig ? 'reveal-big' : 'reveal-up';
+      arrow = '▲'; pctColor = 'text-red-400'; sign = '+';
+      if (isBig) badge = `<span class="absolute -top-2 -right-2 text-[11px] px-2 py-0.5 rounded-full bg-red-500 text-white font-black shadow-lg blink">🔥 급등</span>`;
+    } else if (diff < 0) {
+      dir = 'down'; downCount++;
+      cls = isBig ? 'reveal-big' : 'reveal-down';
+      arrow = '▼'; pctColor = 'text-blue-400'; sign = '';
+      if (isBig) badge = `<span class="absolute -top-2 -right-2 text-[11px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-black shadow-lg blink">💥 급락</span>`;
+    } else {
+      dir = 'flat';
+      cls = 'reveal-flat'; arrow = '—'; pctColor = 'text-slate-400'; sign = '';
+    }
+
+    return `
+      <div class="reveal-card relative p-4 rounded-2xl bg-slate-900/70 border border-white/10 ${cls} flex flex-col gap-2" style="animation-delay:${idx * 0.07}s">
+        ${badge}
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-slate-300 font-bold">${s.sector}</span>
+          <span class="font-black text-white text-sm md:text-base truncate">${s.name}</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 flex-wrap">
+          <span class="text-slate-500 line-through text-sm">${Math.floor(oldP).toLocaleString()}</span>
+          <span class="text-slate-500 text-sm">→</span>
+          <span class="reveal-newprice font-black text-yellow-300 text-lg md:text-2xl tracking-tight" data-old="${Math.floor(oldP)}" data-new="${Math.floor(newP)}">${Math.floor(oldP).toLocaleString()}</span>
+          <span class="text-slate-400 text-xs">원</span>
+        </div>
+        <div class="pct-pop ${pctColor} font-black text-xl md:text-2xl flex items-center gap-1">
+          <span>${arrow}</span>
+          <span>${sign}${pct.toFixed(1)}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('revealArea').innerHTML = cardsHtml;
+  document.getElementById('revealSummary').innerHTML =
+    `<span class="text-red-400">▲ 상승 ${upCount}</span> <span class="text-slate-500 mx-1">/</span> <span class="text-blue-400">▼ 하락 ${downCount}</span>`;
+
+  // 💫 새 주가로 숫자가 올라가는(카운트업) 연출
+  animateRevealPrices();
+}
+
+function animateRevealPrices() {
+  const els = document.querySelectorAll('#revealArea .reveal-newprice');
+  els.forEach(el => {
+    const oldV = parseInt(el.getAttribute('data-old'), 10) || 0;
+    const newV = parseInt(el.getAttribute('data-new'), 10) || 0;
+    if (oldV === newV) { el.textContent = newV.toLocaleString(); return; }
+    const duration = 900, start = performance.now();
+    function step(now) {
+      let t = Math.min((now - start) / duration, 1);
+      t = 1 - Math.pow(1 - t, 3); // ease-out
+      const cur = Math.round(oldV + (newV - oldV) * t);
+      el.textContent = cur.toLocaleString();
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = newV.toLocaleString();
+    }
+    requestAnimationFrame(step);
+  });
 }
 
 function renderHostTeamAssets(teamsObj) {
