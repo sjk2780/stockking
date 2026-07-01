@@ -1498,5 +1498,214 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 1000); // 1초 뒤에 확실하게 실행
 });
 </script>
+  <script>
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    // 1. [기능 복구] 주식 목록 및 주문창 렌더링 함수
+    window.renderAllStocks = function() {
+      if (state.isHost) {
+        const chartArea = document.getElementById('chartArea');
+        if (chartArea && state.stocks) {
+          chartArea.innerHTML = state.stocks.map(s => `
+            <div class="flex justify-between items-center p-3 bg-white/5 rounded-2xl border border-white/10">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm">${s.name}</span>
+              </div>
+              <span class="text-emerald-300 font-black">${s.price.toLocaleString()}원</span>
+            </div>
+          `).join('');
+        }
+      } else {
+        const tradeArea = document.getElementById('tradeArea');
+        if (tradeArea && state.stocks) {
+          const inv = state.myTeamData?.inventory || [0,0,0,0,0,0,0,0,0,0];
+          tradeArea.innerHTML = state.stocks.map((stock, idx) => `
+            <div class="p-3 bg-white/5 border border-white/10 rounded-2xl flex flex-col gap-2">
+              <div class="flex justify-between items-center">
+                <div class="font-bold text-sm">${stock.name}</div>
+                <div class="text-xs text-yellow-300 font-black">${stock.price.toLocaleString()}원</div>
+              </div>
+              <div class="flex justify-between items-center text-xs text-slate-400">
+                <div>내 보유: <span class="font-bold text-white">${inv[idx] || 0}주</span></div>
+              </div>
+              ${state.marketOpen ? `
+              <div class="flex items-center gap-2 mt-1">
+                <button onclick="changeOrderQty(${idx}, -1)" class="w-8 h-8 rounded-lg bg-white/10 font-bold">-</button>
+                <input id="input_qty_${idx}" type="number" class="flex-1 h-8 rounded-lg bg-slate-900 border border-white/20 text-center text-sm font-bold text-white" value="1" min="1"/>
+                <button onclick="changeOrderQty(${idx}, 1)" class="w-8 h-8 rounded-lg bg-white/10 font-bold">+</button>
+              </div>
+              <div class="flex gap-2 mt-1">
+                <button onclick="executeTrade(${idx}, 'buy')" class="flex-1 py-2 rounded-xl bg-rose-500 text-white text-xs font-black">매수 (Buy)</button>
+                <button onclick="executeTrade(${idx}, 'sell')" class="flex-1 py-2 rounded-xl bg-blue-500 text-white text-xs font-black">매도 (Sell)</button>
+              </div>
+              ` : `<div class="text-center text-[10px] text-slate-500 bg-black/20 py-1.5 rounded-lg">장 마감 (거래 불가)</div>`}
+            </div>
+          `).join('');
+        }
+      }
+    };
+
+    // 2. [버그 수정] 완벽한 실시간 동기화 (장 열림/닫힘 UI 즉각 반영)
+    window.initFirebaseSync = function() {
+      if (!metaRef) return;
+      metaRef.on('value', snapshot => {
+        const val = snapshot.val();
+        if(!val) return;
+        state.round = val.round || 1;
+        state.marketOpen = val.marketOpen || false;
+        
+        if (state.isHost) {
+          const hStatus = document.getElementById('hostStatus');
+          if(hStatus) {
+            hStatus.innerText = state.marketOpen ? '🔴 실시간 주문 활성화 (개장)' : '🔒 정산 및 통제 상태 (폐장)';
+            hStatus.className = state.marketOpen ? 'text-xl font-black text-rose-400 animate-pulse' : 'text-xl font-black text-emerald-300';
+          }
+        } else {
+          const marketBadge = document.getElementById('stuMarketBadge');
+          if (marketBadge) {
+            marketBadge.innerText = state.marketOpen ? '🔓 장 열림' : '🔒 장 닫힘';
+            marketBadge.className = state.marketOpen ? 'px-2 py-0.5 rounded font-black text-[10px] bg-emerald-500/20 text-emerald-400' : 'px-2 py-0.5 rounded font-black text-[10px] bg-rose-500/20 text-rose-400';
+          }
+          const stuWaiting = document.getElementById('stuWaiting');
+          const stuGame = document.getElementById('stuGame');
+          const stuMarketNotice = document.getElementById('stuMarketNotice');
+
+          if (state.marketOpen) {
+            if(stuWaiting) stuWaiting.style.display = 'none';
+            if(stuGame) stuGame.style.display = 'block';
+            if(stuMarketNotice) stuMarketNotice.classList.add('hidden');
+          } else {
+            if(stuWaiting) stuWaiting.style.display = 'none'; 
+            if(stuGame) stuGame.style.display = 'block';
+            if(stuMarketNotice) stuMarketNotice.classList.remove('hidden');
+          }
+          if (typeof updateStudentUI === 'function') updateStudentUI();
+          renderAllStocks(); // 장이 열리고 닫힐 때 주문창 새로고침!
+        }
+      });
+      if (stocksRef) {
+        stocksRef.on('value', snap => {
+          if(snap.val()) state.stocks = snap.val();
+          renderAllStocks();
+        });
+      }
+    };
+
+    // 3. [버그 수정] 매수/매도 트랜잭션 (돈 무한복사 방지)
+    window.executeTrade = function(stockIdx, type) {
+      if(!state.marketOpen) return alert('시장이 닫혀있어 주문을 제출할 수 없습니다.');
+      const qty = parseInt(document.getElementById(`input_qty_${stockIdx}`).value) || 0;
+      if(qty <= 0) return alert('주문 수량은 1주 이상이어야 합니다.');
+
+      const stock = state.stocks[stockIdx];
+      const totalPrice = stock.price * qty;
+      const pureKey = state.teamName.replace('팀','').trim();
+      const specificTeamRef = db.ref(`games/class_${state.selectedClass}/teams/${pureKey}`);
+      
+      specificTeamRef.transaction((currentData) => {
+        if (currentData === null) return { cash: 1000000, inventory: [0,0,0,0,0,0,0,0,0,0] }; 
+        let curCash = currentData.cash || 0;
+        let inv = currentData.inventory || [0,0,0,0,0,0,0,0,0,0];
+
+        if (type === 'buy') {
+          if (curCash < totalPrice) return; 
+          currentData.cash = curCash - totalPrice;
+          inv[stockIdx] = (inv[stockIdx] || 0) + qty;
+        } else {
+          if ((inv[stockIdx] || 0) < qty) return; 
+          currentData.cash = curCash + totalPrice;
+          inv[stockIdx] = (inv[stockIdx] || 0) - qty;
+        }
+        currentData.inventory = inv;
+        return currentData;
+      }, (error, committed) => {
+        if (error) alert('서버 통신 에러가 발생했습니다.');
+        else if (!committed) alert(type === 'buy' ? '❌ 매수 실패: 잔액 부족' : '❌ 매도 실패: 보유 주식 부족');
+      });
+    };
+
+    // 4. [기능 복구] 버튼 이벤트(동기화, 랜덤 찌라시) 및 접속 확인
+    if (!state.isHost && state.teamName) {
+      const pureKey = state.teamName.replace('팀', '').trim();
+      const myRef = db.ref(`games/class_${state.selectedClass}/teams/${pureKey}`);
+      myRef.update({ connected: true });
+      myRef.onDisconnect().update({ connected: false });
+      
+      myRef.child('secret').on('value', snap => {
+        const msg = snap.val();
+        if (msg) {
+          document.getElementById('stuSecretText').innerText = msg;
+          document.getElementById('stuSecretBox').classList.remove('hidden');
+        }
+      });
+    } else if (state.isHost) {
+      db.ref(`games/class_${state.selectedClass}/teams`).on('value', snap => {
+        const teams = snap.val() || {};
+        let joinedCount = 0;
+        let joinListHTML = '';
+        for (let i = 1; i <= 6; i++) {
+          const isJoined = teams[i] && teams[i].connected;
+          if (isJoined) joinedCount++;
+          joinListHTML += `
+            <div class="row-s ${isJoined ? 'joined' : ''}">
+              <div class="dot ${isJoined ? 'on' : ''}"></div>
+              <span class="text-sm font-bold">${i}팀</span>
+              <span class="text-xs text-slate-400">${isJoined ? '접속 완료' : '대기 중'}</span>
+            </div>
+          `;
+        }
+        const jc = document.getElementById('joinedCount');
+        const jl = document.getElementById('joinList');
+        if (jc) jc.innerText = joinedCount;
+        if (jl) jl.innerHTML = joinListHTML;
+      });
+    }
+
+    // 미니게임 팀 선택 UI
+    const mgBtns = document.getElementById('mgWinnerBtns');
+    if (mgBtns) {
+      mgBtns.innerHTML = [1,2,3,4,5,6].map(i => `<button class="mg-btn p-3 rounded-xl bg-white/10 font-bold text-sm" onclick="selectMiniWinner(${i}, this)">${i}팀</button>`).join('');
+    }
+    const targetSelect = document.getElementById('targetTeamSelect');
+    if (targetSelect) {
+      targetSelect.innerHTML = '<option value="">보상 줄 팀 선택</option>' + [1,2,3,4,5,6].map(i => `<option value="${i}">${i}팀</option>`).join('');
+    }
+    window.selectMiniWinner = function(teamNo, btnNode) {
+      state.miniWinner = teamNo;
+      document.querySelectorAll('#mgWinnerBtns .mg-btn').forEach(b => b.classList.remove('sel', 'bg-yellow-400', 'text-slate-900'));
+      btnNode.classList.add('sel', 'bg-yellow-400', 'text-slate-900');
+    };
+
+    // 장 열기 / 닫기 버튼 강제 재연결
+    const btnRoundStart = document.getElementById('btnRoundStart');
+    if(btnRoundStart) btnRoundStart.onclick = () => metaRef && metaRef.update({ marketOpen: true }).then(() => alert('시장이 개장되었습니다!'));
+    
+    const btnRoundEnd = document.getElementById('btnRoundEnd');
+    if(btnRoundEnd) btnRoundEnd.onclick = () => metaRef && metaRef.update({ marketOpen: false }).then(() => alert('시장이 마감되었습니다.'));
+    
+    // 학생 동기화 버튼 (새로고침)
+    const btnStuRefresh = document.getElementById('btnStuRefresh');
+    if(btnStuRefresh) btnStuRefresh.onclick = () => window.location.reload(); 
+
+    // 랜덤 찌라시 전송 기능!
+    const btnSendSecret = document.getElementById('btnSendSecret');
+    if (btnSendSecret) {
+      btnSendSecret.onclick = () => {
+        const targetTeam = document.getElementById('targetTeamSelect').value;
+        if (!targetTeam) return alert('먼저 위에 있는 [대상 지정 모둠]에서 팀을 선택하세요!');
+        if (!state.stocks || state.stocks.length === 0) return alert('주식 정보가 없습니다.');
+        const randomStock = state.stocks[Math.floor(Math.random() * state.stocks.length)];
+        const isGoodNews = Math.random() > 0.5;
+        const msg = `[🚨특급 정보🚨]\n\n조만간 <${randomStock.name}> 주식이 ${isGoodNews ? '크게 떡상' : '엄청난 폭락'}을 겪을 것이라는 소문이 있습니다!`;
+        db.ref(`games/class_${state.selectedClass}/teams/${targetTeam}/secret`).set(msg).then(() => alert(`${targetTeam}팀에게 랜덤 찌라시가 성공적으로 전송되었습니다!`));
+      };
+    }
+    
+    // 함수 강제 재실행으로 끊겼던 로직 살리기
+    initFirebaseSync();
+    renderAllStocks();
+  }, 1000); 
+});
+</script>
 </body>
 </html>
