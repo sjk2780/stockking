@@ -524,6 +524,10 @@ function makeHintMessage(stockName, dir) {
   return `${gen(stockName)}\n\n※ 다음 "다음 주가 반영" 시 해당 종목이 큰 폭으로 ${dir==='up' ? '상승' : '하락'}합니다. 남은 거래 시간 동안 전략적으로 활용하세요!`;
 }
 
+// 🎲 뉴스와 실제 주가가 어긋나는 "시장의 반전" 확률 (라운드당 최대 1종목만).
+//   0 으로 두면 뉴스대로 100% 움직입니다. 값을 올릴수록 뉴스가 배신할 확률이 커집니다.
+const NEWS_SURPRISE_CHANCE = 0.25;
+
 let state = {
   selectedClass: null,
   isHost: false,
@@ -534,6 +538,7 @@ let state = {
   teams: [],
   currentNews: [],
   miniWinner: null,
+  stockPlan: null,       // 이번 라운드 뉴스와 짝지어진 "다음 반영 때 적용할 변동 계획"
   pendingBigMover: null  // {stock, dir} — 찌라시로 예약된 다음 대형 변동 종목
 };
 
@@ -669,6 +674,7 @@ function initFirebaseSync() {
     state.sessionEndMessage = val.sessionEndMessage || '';
     state.lastSessionSnapshot = val.lastSessionSnapshot || null;
     state.pendingBigMover = val.pendingBigMover || null;
+    if (val.stockPlan) state.stockPlan = val.stockPlan;
 
     updateHeaderUI();
 
@@ -794,7 +800,12 @@ function switchScreen(id) {
   window.scrollTo(0,0);
 }
 
-function generateBalancedNewsAndPrices() {
+// ══════════════════════════════════════════════════════════════
+// 📰 [1단계] 뉴스 발표 — 이번 라운드의 뉴스를 정하고, 그 방향을 "계획(stockPlan)"에 저장한다.
+//    ❗주가는 아직 움직이지 않는다. 여기서 정한 방향이 "다음날 주가 반영" 때 그대로 적용되므로
+//      학생이 본 뉴스와 실제 주가 변동이 일치한다.
+// ══════════════════════════════════════════════════════════════
+function planRoundNews() {
   if (!state.stocks || state.stocks.length === 0) {
     state.stocks = JSON.parse(JSON.stringify(STOCKS));
   }
@@ -804,68 +815,101 @@ function generateBalancedNewsAndPrices() {
   let upStocks = indices.slice(0, 5);
   let downStocks = indices.slice(5, 10);
 
-  // 🔥 찌라시로 예약된 "대형 변동 종목"이 있으면 해당 인덱스를 찾는다
-  let bigMoverIdx = null;
-  let bigMoverDir = null;
-  if (state.pendingBigMover && state.pendingBigMover.stock) {
-    const foundIdx = state.stocks.findIndex(s => s.name === state.pendingBigMover.stock);
-    if (foundIdx >= 0) {
-      bigMoverIdx = foundIdx;
-      bigMoverDir = state.pendingBigMover.dir;
-      // 대형 변동 종목의 up/down 그룹을 힌트 방향에 맞게 강제 배정
-      upStocks = upStocks.filter(i => i !== bigMoverIdx);
-      downStocks = downStocks.filter(i => i !== bigMoverIdx);
-      if (bigMoverDir === 'up') upStocks.push(bigMoverIdx);
-      else downStocks.push(bigMoverIdx);
-    }
-  }
+  // 공개 헤드라인 뉴스: 상승 2 + 하락 2 종목
+  let headlineIndices = [...upStocks.slice(0, 2), ...downStocks.slice(0, 2)];
 
-  // 공개 헤드라인 뉴스는 "대형 변동 종목"을 제외한 종목 중에서만 선정 (작은 변동 종목만 노출)
-  let newsCandidateUp = upStocks.filter(i => i !== bigMoverIdx);
-  let newsCandidateDown = downStocks.filter(i => i !== bigMoverIdx);
-  let newsUpStocks = newsCandidateUp.slice(0, 2);
-  let newsDownStocks = newsCandidateDown.slice(0, 2);
-  let headlineIndices = [...newsUpStocks, ...newsDownStocks];
-  headlineIndices.sort(() => Math.random() - 0.5);
-
+  let plan = new Array(10);
   let chosenNews = [];
 
   for (let idx = 0; idx < 10; idx++) {
     const sName = state.stocks[idx].name;
-    const targetDir = upStocks.includes(idx) ? 'up' : 'down';
-    const isBigMover = (idx === bigMoverIdx);
+    const dir = upStocks.includes(idx) ? 'up' : 'down';
 
-    let newsPool = targetDir === 'up' ? RANDOM_NEWS_POOL.up : RANDOM_NEWS_POOL.down;
-    let selectedNews = newsPool[Math.floor(Math.random() * newsPool.length)];
-
-    // 📰 공개 뉴스/일반 종목 = 소폭 변동 (3~11%) / 🤫 찌라시 대형 변동 종목 = 대폭 변동 (35~60%)
-    let rate = isBigMover
-      ? (0.35 + Math.random() * 0.25)
-      : (0.03 + Math.random() * 0.08);
-    if (targetDir === 'down') rate = -rate;
-
-    let oldPrice = state.stocks[idx].price;
-    let newPrice = Math.floor(oldPrice * (1 + rate));
-    if (newPrice < 5000) newPrice = 5000;
-
-    state.stocks[idx].prevPrice = oldPrice;
-    state.stocks[idx].price = newPrice;
+    // 소폭 변동 3~11%
+    let rate = 0.03 + Math.random() * 0.08;
+    if (dir === 'down') rate = -rate;
+    plan[idx] = { rate: rate, dir: dir };
 
     if (headlineIndices.includes(idx)) {
+      let pool = dir === 'up' ? RANDOM_NEWS_POOL.up : RANDOM_NEWS_POOL.down;
+      let picked = pool[Math.floor(Math.random() * pool.length)];
       chosenNews.push({
         stock: sName,
-        dir: targetDir,
-        title: `[이슈] ${sName}, ${selectedNews.title}`,
-        text: `${sName} 관련 소식입니다.\n\n${selectedNews.text}`
+        dir: dir,
+        title: `[이슈] ${sName}, ${picked.title}`,
+        text: `${sName} 관련 소식입니다.\n\n${picked.text}`
       });
     }
   }
 
+  // 🎲 낮은 확률로 "시장의 반전" — 헤드라인 종목 중 1개만 실제 방향을 뒤집는다(뉴스는 그대로).
+  //    → 대부분은 뉴스대로 가되, 가끔만 예상을 벗어나게 하여 긴장감을 준다.
+  if (Math.random() < NEWS_SURPRISE_CHANCE && headlineIndices.length > 0) {
+    const pick = headlineIndices[Math.floor(Math.random() * headlineIndices.length)];
+    const flipped = -plan[pick].rate * (0.5 + Math.random() * 0.5); // 반대 방향으로, 다소 약하게
+    plan[pick].rate = flipped;
+    plan[pick].dir = flipped >= 0 ? 'up' : 'down';
+    plan[pick].surprise = true;
+  }
+
+  chosenNews.sort(() => Math.random() - 0.5);
+  state.stockPlan = plan;
+
+  const currentDbRef = db.ref(`games/class_${state.selectedClass}`);
+  currentDbRef.child('meta').update({
+    currentNews: chosenNews,
+    stockPlan: plan
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🌙 [2단계] 다음날 주가 반영 — 발표된 뉴스(=계획)대로 실제 주가를 움직인다.
+//    찌라시(대형 변동) 예약이 있으면 그 종목만 대폭 변동으로 덮어쓴다.
+// ══════════════════════════════════════════════════════════════
+function applyPlannedPrices() {
+  if (!state.stocks || state.stocks.length === 0) {
+    state.stocks = JSON.parse(JSON.stringify(STOCKS));
+  }
+
+  let plan = state.stockPlan;
+  // 계획이 없는 예외 상황이면 즉석에서 소폭 무작위 생성 (안전장치)
+  if (!plan || plan.length !== 10) {
+    plan = new Array(10);
+    let idxs = [0,1,2,3,4,5,6,7,8,9];
+    idxs.sort(() => Math.random() - 0.5);
+    let up = idxs.slice(0, 5);
+    for (let i = 0; i < 10; i++) {
+      let r = 0.03 + Math.random() * 0.08;
+      if (!up.includes(i)) r = -r;
+      plan[i] = { rate: r };
+    }
+  }
+
+  // 🔥 찌라시 예약 종목은 대폭 변동(35~60%)으로 덮어쓴다
+  if (state.pendingBigMover && state.pendingBigMover.stock) {
+    const bIdx = state.stocks.findIndex(s => s.name === state.pendingBigMover.stock);
+    if (bIdx >= 0) {
+      let br = 0.35 + Math.random() * 0.25;
+      if (state.pendingBigMover.dir === 'down') br = -br;
+      plan[bIdx] = { rate: br, big: true };
+    }
+  }
+
+  for (let idx = 0; idx < 10; idx++) {
+    const rate = (plan[idx] && typeof plan[idx].rate === 'number') ? plan[idx].rate : 0;
+    let oldPrice = state.stocks[idx].price;
+    let newPrice = Math.floor(oldPrice * (1 + rate));
+    if (newPrice < 5000) newPrice = 5000;
+    state.stocks[idx].prevPrice = oldPrice;
+    state.stocks[idx].price = newPrice;
+  }
+
+  state.stockPlan = null;
   const currentDbRef = db.ref(`games/class_${state.selectedClass}`);
   currentDbRef.child('stocks').set(state.stocks).then(() => {
     currentDbRef.child('meta').update({
-      currentNews: chosenNews,
-      pendingBigMover: null  // 이번 정산에 사용했으므로 예약 초기화
+      pendingBigMover: null, // 이번 반영에 사용했으므로 예약 초기화
+      stockPlan: null        // 계획 소진
     });
   });
 }
@@ -981,7 +1025,7 @@ function setupDOMEvents() {
   });
 
   bindBtn('btnStartGame', () => {
-    generateBalancedNewsAndPrices(); 
+    planRoundNews();   // 1라운드 뉴스 발표 (주가는 아직 그대로, 이번 라운드 [다음날 주가 반영] 때 뉴스대로 움직임)
     switchScreen('screen-host');
   });
 
@@ -1034,28 +1078,29 @@ function setupDOMEvents() {
        alert('반드시 [거래 마감 (시장 정지)] 처리를 진행한 후 다음 주가를 산출해야 합니다.');
        return;
     }
+    // ✅ 발표된 뉴스(계획)대로 실제 주가를 반영 → 뉴스와 주가 방향이 일치한다
+    applyPlannedPrices();
+    // 🌙 변동 결과를 한눈에 보여주는 리빌 화면 (다음 라운드는 교사가 버튼을 눌러야 진행)
+    showPriceRevealScreen(state.round);
+  });
 
-    // 2라운드 마감은 주가 반영 없이 미니게임으로 (기존 동작 유지)
-    if(state.round === 2) {
-      showRankingScreen();
+  // 🌙 리빌 화면 - 다음 라운드 진행하기
+  bindBtn('btnRevealNext', () => {
+    const finished = state.round;
+
+    // 2라운드 마감은 미니게임으로 (기존 동작 유지)
+    if(finished === 2) {
       alert('2라운드가 마감되었습니다! 미니게임 특별 보상 배포 페이지로 자동 진입합니다.');
       openMiniGameManager();
       return;
     }
 
-    const nextRound = state.round + 1;
+    const nextRound = finished + 1;
     db.ref(`games/class_${state.selectedClass}/meta/round`).set(nextRound).then(() => {
-      // 주가 계산 (prevPrice 저장 + 신규 가격 반영)
-      generateBalancedNewsAndPrices();
-      // ✅ 변동 결과를 한눈에 보여주는 리빌 화면으로 이동 (다음 라운드는 교사가 버튼을 눌러야 진행)
-      showPriceRevealScreen(nextRound);
+      planRoundNews(); // 다음 라운드 뉴스 발표 (주가는 이번 라운드 [다음날 주가 반영] 때 뉴스대로 움직임)
+      switchScreen('screen-host');
+      alert(`${nextRound}라운드 뉴스가 발표되었습니다! 뉴스를 확인하고 [거래 개장]으로 시장을 열어주세요.`);
     });
-  });
-
-  // 🌙 리빌 화면 - 다음 라운드 진행하기 (컨트롤 대시보드로 복귀)
-  bindBtn('btnRevealNext', () => {
-    switchScreen('screen-host');
-    alert(`${state.round}라운드가 시작되었습니다! 뉴스를 확인하고 [거래 개장]으로 시장을 열어주세요.`);
   });
 
   // 🌙 리빌 화면 - 자산 순위 먼저 보기 (선택)
@@ -1106,7 +1151,7 @@ function setupDOMEvents() {
       isMiniGameTime: false,
       marketOpen: false
     }).then(() => {
-      generateBalancedNewsAndPrices();
+      planRoundNews(); // 미니게임 이후(3라운드) 뉴스 발표 — 주가는 다음 [주가 반영] 때 뉴스대로 움직임
       alert('미니게임 연계 보상 정산이 완전히 끝났습니다. 교사 제어창으로 돌아갑니다.');
       switchScreen('screen-host');
     });
@@ -1119,8 +1164,8 @@ function setupDOMEvents() {
   bindBtn('btnTimerStop', () => stopTimer());
 
   bindBtn('btnShuffleNews', () => {
-    if(confirm('새로운 무작위 뉴스 4개로 다시 뽑으시겠습니까?')) {
-      generateBalancedNewsAndPrices();
+    if(confirm('새로운 무작위 뉴스로 다시 뽑으시겠습니까? (주가는 움직이지 않고, 다음 [주가 반영] 때 새 뉴스대로 반영됩니다)')) {
+      planRoundNews();
     }
   });
 
