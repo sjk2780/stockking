@@ -57,6 +57,8 @@
   </style>
 </head>
 <body>
+<!-- 🔌 연결 상태 배너 (태블릿 끊김/재연결 안내) -->
+<div id="connBanner" style="display:none" class="fixed top-0 left-0 right-0 z-[100] text-center text-sm md:text-base font-black py-2.5 px-3 shadow-xl"></div>
 <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
 
   <header id="mainHeader" class="glass rounded-3xl p-5 md:p-6 mb-5 md:mb-8 glow">
@@ -561,6 +563,56 @@ const urlParams = new URLSearchParams(window.location.search);
 const pClass = urlParams.get('c');
 const pTeam = urlParams.get('t');
 
+/* ══════════ 🔌 연결 상태 배너 & 학생 재접속(presence) 처리 ══════════ */
+let _everConnected = false, _wasDisconnected = false, _studentOnlineRef = null;
+
+function showConnBanner(disconnected) {
+  const b = document.getElementById('connBanner');
+  if(!b) return;
+  if(disconnected) {
+    _wasDisconnected = true;
+    b.style.display = 'block';
+    b.style.background = '#e11d48';
+    b.style.color = '#fff';
+    b.innerHTML = '🔌 연결이 잠시 끊겼어요. 자동으로 다시 연결 중입니다… &nbsp;<u style="cursor:pointer" onclick="location.reload()">지금 새로고침</u>';
+  } else {
+    if(_wasDisconnected) {
+      _wasDisconnected = false;
+      b.style.display = 'block';
+      b.style.background = '#059669';
+      b.style.color = '#fff';
+      b.innerHTML = '✅ 다시 연결되었습니다!';
+      setTimeout(() => { const bb = document.getElementById('connBanner'); if(bb) bb.style.display = 'none'; }, 1800);
+    } else {
+      b.style.display = 'none';
+    }
+  }
+}
+
+// 태블릿은 자주 끊기므로, 끊겼다 붙을 때마다 자동으로 online 을 되살린다.
+function setupStudentPresence(cls, pureKey) {
+  const onlineRef = db.ref(`games/class_${cls}/teams/${pureKey}/online`);
+  _studentOnlineRef = onlineRef;
+  const connectedRef = db.ref('.info/connected');
+
+  connectedRef.on('value', (snap) => {
+    if(snap.val() === true) {
+      _everConnected = true;
+      // 끊길 때 자동으로 오프라인 처리(재연결마다 다시 등록해야 함) → 그 후 온라인 set
+      onlineRef.onDisconnect().set(false).then(() => onlineRef.set(true)).catch(()=>{});
+      showConnBanner(false);
+    } else {
+      if(_everConnected) showConnBanner(true); // 최초 연결 전의 false 는 무시
+    }
+  });
+
+  // 태블릿에서 다른 앱 갔다가 돌아오거나(visibility/focus), 네트워크가 복구되면 즉시 재확인
+  document.addEventListener('visibilitychange', () => { if(!document.hidden && _studentOnlineRef) _studentOnlineRef.set(true); });
+  window.addEventListener('focus', () => { if(_studentOnlineRef) _studentOnlineRef.set(true); });
+  window.addEventListener('online', () => { if(_studentOnlineRef) _studentOnlineRef.set(true); });
+  window.addEventListener('offline', () => showConnBanner(true));
+}
+
 /* ══════════ 초기 실행 안전장치 (우선 실행) ══════════ */
 window.onload = function() {
   setupDOMEvents();
@@ -578,10 +630,8 @@ window.onload = function() {
     initFirebaseSync();
     
     const pureKey = pTeam.replace('팀','').replace('모둠','').trim();
-    const onlineRef = db.ref(`games/class_${pClass}/teams/${pureKey}/online`);
-    onlineRef.set(true);                
-    onlineRef.onDisconnect().set(false); 
-    
+    setupStudentPresence(pClass, pureKey);
+
     switchScreen('screen-student');
   } else if(pClass && urlParams.get('mode')==='host') {
     state.selectedClass = pClass;
