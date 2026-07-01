@@ -162,6 +162,28 @@
       </div>
     </section>
 
+    <!-- 📱 다음 차시 재접속용 QR 화면 (게임 데이터는 그대로 유지) -->
+    <section id="screen-qr" class="screen">
+      <div class="glass rounded-3xl p-5 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-900 font-black text-sm mb-2">📱 학생 재접속 QR</div>
+            <h2 class="text-2xl md:text-3xl font-black">이어서 하기 · 모둠 QR 다시 스캔</h2>
+            <p class="text-slate-300 text-sm mt-1">학생들이 <b class="text-cyan-300">자기 모둠</b> QR을 스캔하면 이전 자금·보유 주식 그대로 복귀합니다. 새 태블릿이어도 됩니다.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-center px-4 py-2 rounded-2xl bg-white/6 border border-white/10">
+              <div class="text-2xl font-black text-emerald-400"><span id="qrResumeCount">0</span><span class="text-slate-400 text-lg"> / 6</span></div>
+              <div class="text-[10px] text-slate-400 font-bold">접속 완료 모둠</div>
+            </div>
+            <button id="btnQrBack" class="btn px-5 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black shadow-lg">← 대시보드로 (게임 계속)</button>
+          </div>
+        </div>
+        <div id="qrGridResume" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        <p class="text-slate-400 text-xs mt-4">💡 QR을 클릭하면 크게 확대됩니다. 스캔이 어려우면 확대해서 보여주세요. 접속하면 해당 모둠 숫자가 올라갑니다.</p>
+      </div>
+    </section>
+
     <section id="screen-host" class="screen">
       <div class="glass rounded-3xl p-5 md:p-8">
         <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 mb-5 pb-5 border-b border-white/10">
@@ -175,6 +197,7 @@
               <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">⏸ 거래 마감 (시장 정지)</button>
               <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black shadow-lg">🌙 다음 주가 무작위 반영</button>
               <button id="btnEndGameEarly" class="btn px-5 py-3 rounded-2xl bg-gray-600 text-white font-black shadow-lg">🛑 게임 조기 종료 (결과)</button>
+              <button id="btnShowQr" class="btn px-5 py-3 rounded-2xl bg-cyan-500 text-slate-950 font-black shadow-lg">📱 접속 QR 열기</button>
             </div>
             <div class="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex-wrap">
               <button id="btnEndSession" class="btn px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-sm whitespace-nowrap">🏁 차시 종료 (오늘 수업 마무리)</button>
@@ -805,6 +828,7 @@ function initFirebaseSync() {
     if(state.isHost) {
       updateLobbyStatus(val);
       renderHostTeamAssets(val); 
+      refreshResumeQrStatus();
     } else {
       const pureKey = state.teamName.replace('팀','');
       const myData = val[pureKey];
@@ -1258,6 +1282,15 @@ function setupDOMEvents() {
   bindBtn('btnCloseModal', () => document.getElementById('qrModal').style.removeProperty('display'));
   bindBtn('btnBackHost', () => switchScreen('screen-host'));
   bindBtn('btnToLobby', () => { buildQrGrid(); switchScreen('screen-lobby'); });
+
+  // 📱 다음 차시 재접속용 QR 화면 열기 (게임 데이터는 그대로, 학생이 다시 스캔해서 복귀)
+  bindBtn('btnShowQr', () => {
+    buildQrGrid('qrGridResume', 140);
+    refreshResumeQrStatus();
+    switchScreen('screen-qr');
+  });
+  bindBtn('btnQrBack', () => switchScreen('screen-host'));
+
   bindBtn('btnStuRefresh', () => { alert('파이어베이스 실시간 동기화를 새로고침합니다.'); initFirebaseSync(); });
   
   bindBtn('btnMiniSkip', () => {
@@ -1607,9 +1640,11 @@ function showRankingScreen() {
   if(rn) rn.style.display = state.pendingRoundAdvance ? '' : 'none';
 }
 
-function buildQrGrid() {
-  const grid = document.getElementById('qrGrid');
+function buildQrGrid(gridId, qrSize) {
+  const grid = document.getElementById(gridId || 'qrGrid');
+  if(!grid) return;
   grid.innerHTML = '';
+  const size = qrSize || 64;
   const currentBaseUrl = window.location.href.split('?')[0];
 
   for(let i=1; i<=6; i++) {
@@ -1619,18 +1654,29 @@ function buildQrGrid() {
     
     const qrDiv = document.createElement('div');
     qrDiv.className = 'qr-thumb flex items-center justify-center';
+    if(size > 64) { qrDiv.style.width = size + 'px'; qrDiv.style.height = size + 'px'; }
     qrDiv.onclick = () => showBigQr(studentUrl, `${i}모둠 학생 단말기 접속 링크 QR`);
     
-    new QRCode(qrDiv, { text: studentUrl, width: 64, height: 64, correctLevel: QRCode.CorrectLevel.L });
+    new QRCode(qrDiv, { text: studentUrl, width: size, height: size, correctLevel: QRCode.CorrectLevel.L });
     
     const lbl = document.createElement('span');
-    lbl.className = 'text-[10px] font-black text-slate-300';
+    lbl.className = 'text-xs font-black text-slate-300';
     lbl.innerText = `${i}모둠 QR`;
     
     wrap.appendChild(qrDiv);
     wrap.appendChild(lbl);
     grid.appendChild(wrap);
   }
+}
+
+// 📱 재접속 QR 화면의 "접속 완료 모둠" 카운트 갱신
+function refreshResumeQrStatus() {
+  const el = document.getElementById('qrResumeCount');
+  if(!el) return;
+  const obj = latestTeamsObj || {};
+  let cnt = 0;
+  for(let i=1; i<=6; i++) { if(obj[i] && obj[i].online === true) cnt++; }
+  el.innerText = cnt;
 }
 
 function showBigQr(url, label) {
