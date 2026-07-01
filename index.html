@@ -1347,5 +1347,156 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 1000); // 1초 뒤에 확실하게 버튼에 기능 주입
 });
 </script>
+  <script>
+// 1. 학생 실시간 접속 확인 (로비 연동)
+function trackStudentConnection() {
+  if (!state.isHost) {
+    const pureKey = state.teamName.replace('팀', '').trim();
+    const myRef = db.ref(`games/class_${state.selectedClass}/teams/${pureKey}`);
+    myRef.update({ connected: true }); // 접속 시 true
+    myRef.onDisconnect().update({ connected: false }); // 나갈 시 false
+    
+    // 학생: 찌라시(비밀정보) 수신 팝업 리스너
+    myRef.child('secret').on('value', snap => {
+      const msg = snap.val();
+      const box = document.getElementById('stuSecretBox');
+      const txt = document.getElementById('stuSecretText');
+      if (msg && box && txt) {
+        txt.innerText = msg;
+        box.classList.remove('hidden');
+      }
+    });
+  } else {
+    // 교사: 학생들 접속 현황 실시간 감지
+    db.ref(`games/class_${state.selectedClass}/teams`).on('value', snap => {
+      const teams = snap.val() || {};
+      let joinedCount = 0;
+      let joinListHTML = '';
+      for (let i = 1; i <= 6; i++) {
+        const isJoined = teams[i] && teams[i].connected;
+        if (isJoined) joinedCount++;
+        joinListHTML += `
+          <div class="row-s ${isJoined ? 'joined' : ''}">
+            <div class="dot ${isJoined ? 'on' : ''}"></div>
+            <span class="text-sm font-bold">${i}팀</span>
+            <span class="text-xs text-slate-400">${isJoined ? '접속 완료 (온라인)' : '대기 중'}</span>
+          </div>
+        `;
+      }
+      const jc = document.getElementById('joinedCount');
+      const jl = document.getElementById('joinList');
+      if (jc) jc.innerText = joinedCount;
+      if (jl) jl.innerHTML = joinListHTML;
+    });
+  }
+}
+
+// 2. 주식 목록 화면에 띄우기 (교사 & 학생)
+function renderAllStocks() {
+  // 교사 화면 (전 종목 시세표)
+  if (state.isHost) {
+    const chartArea = document.getElementById('chartArea');
+    if (chartArea && state.stocks) {
+      chartArea.innerHTML = state.stocks.map((s) => `
+        <div class="flex justify-between items-center p-3 bg-white/5 rounded-2xl border border-white/10">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black bg-white/10 px-2 py-1 rounded text-slate-300">${s.sector || '주식'}</span>
+            <span class="font-bold text-sm">${s.name}</span>
+          </div>
+          <span class="text-emerald-300 font-black">${s.price.toLocaleString()}원</span>
+        </div>
+      `).join('');
+    }
+  } 
+  // 학생 화면 (주문창)
+  else {
+    const tradeArea = document.getElementById('tradeArea');
+    if (tradeArea && state.stocks) {
+      const inv = state.myTeamData?.inventory || [0,0,0,0,0,0,0,0,0,0];
+      tradeArea.innerHTML = state.stocks.map((stock, idx) => `
+        <div class="p-3 bg-white/5 border border-white/10 rounded-2xl flex flex-col gap-2">
+          <div class="flex justify-between items-center">
+            <div class="font-bold text-sm">${stock.name}</div>
+            <div class="text-xs text-yellow-300 font-black">${stock.price.toLocaleString()}원</div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <div>내 보유: <span class="font-bold text-white">${inv[idx] || 0}주</span></div>
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <button onclick="changeOrderQty(${idx}, -1)" class="w-8 h-8 rounded-lg bg-white/10 font-bold">-</button>
+            <input id="input_qty_${idx}" type="number" class="flex-1 h-8 rounded-lg bg-slate-900 border border-white/20 text-center text-sm font-bold text-white" value="1" min="1"/>
+            <button onclick="changeOrderQty(${idx}, 1)" class="w-8 h-8 rounded-lg bg-white/10 font-bold">+</button>
+          </div>
+          <div class="flex gap-2 mt-1">
+            <button onclick="executeTrade(${idx}, 'buy')" class="flex-1 py-2 rounded-xl bg-rose-500 text-white text-xs font-black">매수 (Buy)</button>
+            <button onclick="executeTrade(${idx}, 'sell')" class="flex-1 py-2 rounded-xl bg-blue-500 text-white text-xs font-black">매도 (Sell)</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+// 3. 미니게임 보상 줄 팀 선택 UI 생성
+function initMinigameAndCheats() {
+  if (!state.isHost) return;
+  
+  // 미니게임 1~6팀 버튼 렌더링
+  const mgBtns = document.getElementById('mgWinnerBtns');
+  if (mgBtns) {
+    mgBtns.innerHTML = [1,2,3,4,5,6].map(i => 
+      `<button class="mg-btn p-3 rounded-xl bg-white/10 font-bold text-sm" onclick="selectMiniWinner(${i}, this)">${i}팀</button>`
+    ).join('');
+  }
+
+  // 치트 제어소: 찌라시 줄 대상 팀 선택(select) 옵션 생성
+  const targetSelect = document.getElementById('targetTeamSelect');
+  if (targetSelect) {
+    targetSelect.innerHTML = '<option value="">보상 줄 팀 선택</option>' + [1,2,3,4,5,6].map(i => `<option value="${i}">${i}팀</option>`).join('');
+  }
+}
+
+// 미니게임 팀 클릭 시 UI 하이라이트 함수
+window.selectMiniWinner = function(teamNo, btnNode) {
+  state.miniWinner = teamNo;
+  document.querySelectorAll('#mgWinnerBtns .mg-btn').forEach(b => b.classList.remove('sel', 'bg-yellow-400', 'text-slate-900'));
+  btnNode.classList.add('sel', 'bg-yellow-400', 'text-slate-900');
+};
+
+// 4. 모든 기능 자동 실행 및 '랜덤 찌라시' 전송 기능 연동
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    trackStudentConnection(); // 로비 접속자 추적 시작
+    renderAllStocks(); // 주식 목록 렌더링
+    initMinigameAndCheats(); // 미니게임 버튼 렌더링
+
+    // 주식 가격이 변할 때마다 학생/교사 화면 실시간 갱신
+    if (stocksRef) {
+      stocksRef.on('value', snap => {
+        if(snap.val()) state.stocks = snap.val();
+        renderAllStocks();
+      });
+    }
+
+    // [치트 제어소] 랜덤 찌라시 전송 이벤트
+    const btnSendSecret = document.getElementById('btnSendSecret');
+    if (btnSendSecret) {
+      btnSendSecret.onclick = () => {
+        const targetTeam = document.getElementById('targetTeamSelect').value;
+        if (!targetTeam) return alert('먼저 위에 있는 [대상 지정 모둠]에서 팀을 선택하세요!');
+        
+        // 랜덤 주식 종목 및 랜덤 등락(떡상/폭락) 뽑기!
+        const randomStock = state.stocks[Math.floor(Math.random() * state.stocks.length)];
+        const isGoodNews = Math.random() > 0.5;
+        const msg = `[🚨특급 정보🚨] 우리 팀에만 들어온 정보입니다.\n\n조만간 <${randomStock.name}> 주식이 ${isGoodNews ? '크게 떡상' : '엄청난 폭락'}을 겪을 것이라는 소문이 있습니다!`;
+        
+        // 파이어베이스를 통해 선택한 팀 화면에만 팝업 전송
+        db.ref(`games/class_${state.selectedClass}/teams/${targetTeam}/secret`).set(msg)
+          .then(() => alert(`${targetTeam}팀에게 랜덤 찌라시가 성공적으로 전송되었습니다!`));
+      };
+    }
+  }, 1000); // 1초 뒤에 확실하게 실행
+});
+</script>
 </body>
 </html>
