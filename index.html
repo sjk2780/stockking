@@ -164,6 +164,10 @@
               <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black shadow-lg">🌙 다음 주가 무작위 반영</button>
               <button id="btnEndGameEarly" class="btn px-5 py-3 rounded-2xl bg-gray-600 text-white font-black shadow-lg">🛑 게임 조기 종료 (결과)</button>
             </div>
+            <div class="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex-wrap">
+              <button id="btnEndSession" class="btn px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-sm whitespace-nowrap">🏁 차시 종료 (오늘 수업 마무리)</button>
+              <input id="sessionEndMsgInput" type="text" class="flex-1 min-w-[180px] p-2 rounded-xl bg-slate-900 border border-white/10 text-xs text-white placeholder-slate-500 outline-none" placeholder="학생에게 보여줄 마무리 메시지 (선택, 비우면 기본 문구)"/>
+            </div>
             <div class="flex items-center gap-2 p-3 rounded-2xl bg-white/6 border border-white/10 flex-wrap">
               <span class="text-xs font-black text-slate-300">⏱ 제한 타이머:</span>
               <button class="timerBtn btn px-3 py-1.5 rounded-xl bg-blue-500/30 text-blue-300 text-xs font-black" data-sec="60">1분</button>
@@ -193,6 +197,7 @@
           <div class="p-4 rounded-2xl bg-white/8 border border-white/10">
             <div class="text-xs text-slate-400 mb-1">현재 거래 상태</div>
             <div id="hostStatus" class="text-xl font-black text-emerald-300">대기</div>
+            <div id="hostSessionEndedBadge" class="hidden mt-1 text-[10px] font-black text-amber-400">🏁 오늘 차시 종료됨 (학생 화면에 마무리 안내 표시 중)</div>
           </div>
         </div>
 
@@ -220,9 +225,9 @@
                 <select id="targetTeamSelect" class="w-full p-2.5 rounded-xl bg-slate-900 border border-white/20 text-white font-black text-sm outline-none"></select>
               </div>
               <div class="p-3 rounded-xl bg-cyan-400/10 border border-cyan-400/20">
-                <div class="text-xs font-black text-cyan-300 mb-1">🤫 개별 찌라시 즉시 전송</div>
-                <select id="secretSelect" class="w-full p-2 rounded-xl bg-slate-900 border border-white/10 text-xs text-white outline-none mb-2"></select>
-                <button id="btnSendSecret" class="btn w-full py-2 rounded-xl bg-cyan-500 text-slate-950 font-black text-xs">선택 모둠에만 전송 ⚡</button>
+                <div class="text-xs font-black text-cyan-300 mb-1">🤫 랜덤 찌라시(소문) 전송</div>
+                <p class="text-[10px] text-slate-400 mb-2">특정 종목을 지정하지 않는 막연한 소문이 무작위로 뽑혀 전송됩니다. 진위 여부는 학생이 직접 판단해야 합니다.</p>
+                <button id="btnSendSecret" class="btn w-full py-2 rounded-xl bg-cyan-500 text-slate-950 font-black text-xs">🎲 선택 모둠에 랜덤 찌라시 전송 ⚡</button>
               </div>
               <div class="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
                 <div class="text-xs font-black text-slate-300">💰 자금 수동 정산</div>
@@ -334,9 +339,22 @@
           </div>
         </div>
       </div>
+      <div id="stuSessionDiffBox" class="hidden mb-4 p-3 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-between">
+        <span class="text-xs font-black text-indigo-200">📊 지난 차시 대비 자산 변동</span>
+        <span id="stuSessionDiffText" class="text-sm font-black">-</span>
+      </div>
       <div id="stuSecretBox" class="hidden mb-4 p-4 rounded-2xl bg-cyan-400/20 border-2 border-cyan-400 text-cyan-100 animate-pulse">
         <div class="font-black text-xs flex items-center gap-1">🤫 [모둠 단독 입수] 여의도 증권가 찌라시!</div>
         <div id="stuSecretText" class="text-sm mt-1.5 text-yellow-300 font-black tracking-wide bg-black/20 p-2 rounded-xl whitespace-pre-line"></div>
+      </div>
+      <div id="stuSessionEndBox" class="hidden glass rounded-3xl p-8 text-center border-2 border-amber-400/50">
+        <div class="text-5xl mb-3">🏁</div>
+        <h2 class="text-xl font-black mb-2 text-amber-300">오늘 수업은 여기까지!</h2>
+        <p id="stuSessionEndMsg" class="text-slate-300 text-sm mb-5 whitespace-pre-line">다음 시간에 이어서 진행할게요 🙌</p>
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10">
+          <div class="text-[10px] text-slate-400">오늘의 최종 평가 자산</div>
+          <div id="stuSessionEndAsset" class="text-2xl font-black text-emerald-300">0원</div>
+        </div>
       </div>
       <div id="stuWaiting" class="glass rounded-3xl p-8 text-center">
         <div class="text-5xl mb-3">⏳</div>
@@ -568,6 +586,31 @@ function initClassSelectInterface() {
   if(defaultBtn) defaultBtn.click();
 }
 
+function updateStudentSessionDiffBadge() {
+  if(state.isHost || !state.teamName) return;
+  const box = document.getElementById('stuSessionDiffBox');
+  const txt = document.getElementById('stuSessionDiffText');
+  if(!box || !txt) return;
+  const snap = state.lastSessionSnapshot;
+  const pureKey = state.teamName.replace('팀','');
+  if(!snap || snap[pureKey] === undefined || state._myTotalAsset === undefined) {
+    box.classList.add('hidden');
+    return;
+  }
+  const diff = state._myTotalAsset - snap[pureKey];
+  box.classList.remove('hidden');
+  const sign = diff >= 0 ? '+' : '';
+  txt.innerText = `${sign}${diff.toLocaleString()}원`;
+  txt.className = `text-sm font-black ${diff >= 0 ? 'text-emerald-300' : 'text-rose-400'}`;
+}
+
+function updateStudentSessionEndAsset() {
+  if(state.isHost || !state.teamName) return;
+  const el = document.getElementById('stuSessionEndAsset');
+  if(!el || state._myTotalAsset === undefined) return;
+  el.innerText = state._myTotalAsset.toLocaleString() + '원';
+}
+
 function initFirebaseSync() {
   if (!metaRef) return;
 
@@ -578,6 +621,9 @@ function initFirebaseSync() {
     state.marketOpen = val.marketOpen || false;
     state.currentNews = val.currentNews || [];
     state.miniWinner = val.miniWinner || null;
+    state.sessionEnded = val.sessionEnded || false;
+    state.sessionEndMessage = val.sessionEndMessage || '';
+    state.lastSessionSnapshot = val.lastSessionSnapshot || null;
 
     updateHeaderUI();
 
@@ -586,6 +632,7 @@ function initFirebaseSync() {
       document.getElementById('hostRound').innerText = state.round + ' 라운드';
       document.getElementById('hostStatus').innerText = state.marketOpen ? '🔴 실시간 주문 활성화 (개장)' : '🔒 정산 및 통제 상태 (폐장)';
       document.getElementById('hostStatus').className = state.marketOpen ? 'text-xl font-black text-rose-400 animate-pulse' : 'text-xl font-black text-emerald-300';
+      document.getElementById('hostSessionEndedBadge').classList.toggle('hidden', !state.sessionEnded);
       renderHostNews();
     } else {
       document.getElementById('stuTeamBadge').innerText = state.teamName;
@@ -606,18 +653,30 @@ function initFirebaseSync() {
         }
       } else {
         switchScreen('screen-student');
-        if(state.round === 1 && !state.marketOpen && (!state.currentNews || state.currentNews.length === 0)) {
-          document.getElementById('stuWaiting').style.display = 'block';
-          document.getElementById('stuGame').style.display = 'none';
-        } else {
+        const sessionEndBox = document.getElementById('stuSessionEndBox');
+        if(state.sessionEnded && !state.marketOpen) {
+          // 오늘 수업 마무리 화면
+          sessionEndBox.classList.remove('hidden');
           document.getElementById('stuWaiting').style.display = 'none';
-          document.getElementById('stuGame').style.display = 'block';
-          if(state.marketOpen) {
-            document.getElementById('stuMarketNotice').classList.add('hidden');
+          document.getElementById('stuGame').style.display = 'none';
+          document.getElementById('stuSessionEndMsg').innerText = state.sessionEndMessage || '다음 시간에 이어서 진행할게요 🙌';
+          updateStudentSessionEndAsset();
+        } else {
+          sessionEndBox.classList.add('hidden');
+          if(state.round === 1 && !state.marketOpen && (!state.currentNews || state.currentNews.length === 0)) {
+            document.getElementById('stuWaiting').style.display = 'block';
+            document.getElementById('stuGame').style.display = 'none';
           } else {
-            document.getElementById('stuMarketNotice').classList.remove('hidden');
+            document.getElementById('stuWaiting').style.display = 'none';
+            document.getElementById('stuGame').style.display = 'block';
+            if(state.marketOpen) {
+              document.getElementById('stuMarketNotice').classList.add('hidden');
+            } else {
+              document.getElementById('stuMarketNotice').classList.remove('hidden');
+            }
           }
         }
+        updateStudentSessionDiffBadge();
       }
     }
   });
@@ -648,6 +707,9 @@ function initFirebaseSync() {
           totalAsset += qty * s.price;
         });
         document.getElementById('stuAsset').innerText = Math.floor(totalAsset).toLocaleString() + '원';
+        state._myTotalAsset = Math.floor(totalAsset);
+        updateStudentSessionDiffBadge();
+        updateStudentSessionEndAsset();
 
         const sBox = document.getElementById('stuSecretBox');
         if(myData.secretMessage) {
@@ -853,12 +915,47 @@ function setupDOMEvents() {
   });
 
   bindBtn('btnRoundStart', () => {
-    metaRef.update({ marketOpen: true, isMiniGameTime: false });
+    metaRef.update({ marketOpen: true, isMiniGameTime: false, sessionEnded: false });
   });
 
   bindBtn('btnRoundEnd', () => {
     metaRef.child('marketOpen').set(false);
     stopTimer();
+  });
+
+  bindBtn('btnEndSession', () => {
+    if(!state.selectedClass) return alert('반이 선택되지 않았습니다.');
+    const proceed = () => {
+      stopTimer();
+      // 팀별 현재 총 자산 스냅샷 계산
+      const snapshot = {};
+      Object.keys(latestTeamsObj || {}).forEach(k => {
+        const t = latestTeamsObj[k];
+        let total = t.cash || 0;
+        state.stocks.forEach((s, idx) => {
+          const qty = (t.inventory ? t.inventory[idx] : 0) || 0;
+          total += qty * s.price;
+        });
+        snapshot[k] = Math.floor(total);
+      });
+      const msgInput = document.getElementById('sessionEndMsgInput');
+      const customMsg = (msgInput && msgInput.value.trim()) || '오늘 수업은 여기까지! 다음 시간에 이어서 진행할게요 🙌';
+      metaRef.update({
+        marketOpen: false,
+        sessionEnded: true,
+        sessionEndMessage: customMsg,
+        lastSessionSnapshot: snapshot,
+        lastSessionSnapshotAt: Date.now()
+      }).then(() => {
+        alert('✅ 오늘 차시가 저장되었습니다! 학생 화면에 "오늘은 여기까지" 안내가 표시됩니다.\n다음 시간에 [이어서 진행하기] → [거래 개장]을 누르면 자동으로 재개됩니다.');
+        if(msgInput) msgInput.value = '';
+      });
+    };
+    if(state.marketOpen) {
+      if(confirm('시장이 아직 열려있습니다. 자동으로 거래를 마감하고 차시를 종료할까요?')) proceed();
+    } else {
+      proceed();
+    }
   });
 
   bindBtn('btnNextDay', () => {
@@ -961,20 +1058,13 @@ function setupDOMEvents() {
     }
   });
 
-  const sSel = document.getElementById('secretSelect');
-  if (sSel) {
-    sSel.innerHTML = STOCKS.map(s => `
-      <option value="[특급 정보] 내부 거래 소식에 근거해 ${s.name}의 해외 가치 평가액이 기하급수적으로 폭등할 예고가 전해집니다.">[호재 찌라시] ${s.name}</option>
-      <option value="[위험 정보] 비밀 분쟁 합의금 소송 패소 예고로 ${s.name}의 투자 안전 등급이 하향될 위기에 놓였습니다.">[악재 찌라시] ${s.name}</option>
-    `).join('');
-  }
-
   bindBtn('btnSendSecret', () => {
     const team = document.getElementById('targetTeamSelect').value;
-    const msg = document.getElementById('secretSelect').value;
     if(!team) return alert('대상을 선택하세요.');
+    const randomRumor = SECRET_RUMOR_POOL[Math.floor(Math.random() * SECRET_RUMOR_POOL.length)];
+    const msg = `[선생님 특별 첩보 투하]\n\n${randomRumor}\n\n※ 해당 찌라시(소문)는 사실일 수도, 거짓일 수도 있습니다. 신중하게 판단하세요!`;
     db.ref(`games/class_${state.selectedClass}/teams/${team}/secretMessage`).set(msg);
-    alert(`${team}모둠에 특수 개별 첩보를 실시간 투하했습니다.`);
+    alert(`${team}모둠에 랜덤 찌라시를 실시간 투하했습니다.`);
   });
 
   bindBtn('btnApplyCashMod', () => {
