@@ -471,15 +471,25 @@ const RANDOM_NEWS_POOL = {
   ]
 };
 
-// 🔥 [신규 업데이트] 미니게임 보상용 빅이슈 찌라시 풀 (종목 지정 없음, 시장 전체 흐름에 대한 소문)
-const SECRET_RUMOR_POOL = [
-  "[특급 호재 찌라시] 조만간 모 기업이 '글로벌 빅테크 기업과 초대형 파트너십'을 맺는다는 소문이 돌고 있습니다. 이 뉴스가 뜨는 종목은 엄청난 폭등이 예상됩니다!",
-  "[악재 찌라시] 모 기업의 '경영진 수백억 대 횡령' 정황이 포착되었다는 여의도발 소문입니다. 조만간 관련 뉴스가 보도되면 주가는 바닥을 칠 것입니다.",
-  "[악재 찌라시] 특정 기업의 '주력 제품 치명적 결함'이 은폐되고 있다는 내부 고발이 있었습니다. 기사화가 임박했으니 폭락에 주의하세요.",
-  "[특급 호재 찌라시] 모 기업이 '정부 대규모 지원 사업'에 은밀히 내정되었다는 극비 정보가 있습니다. 발표 즉시 강력한 매수세가 몰릴 것입니다.",
-  "[호재 찌라시] 다음 라운드에 특정 기업이 '시장 예상을 깬 역대급 어닝 서프라이즈'를 기록할 확률이 매우 높습니다. 관련된 종목을 선점하는 것을 추천합니다.",
-  "[위험 찌라시] 어느 기업의 '핵심 기술이 해외로 유출'되어 곧 대대적인 압수수색이 벌어질 예정이라고 합니다. 보유 시 치명적인 손실이 우려됩니다."
-];
+// 🔥 [개편] 찌라시(힌트)는 이제 실제 특정 종목의 대형 변동과 연결됩니다.
+// 공개 뉴스(RANDOM_NEWS_POOL)는 소폭 변동용, 찌라시는 대폭 변동(비공개) 종목을 알려줍니다.
+const HINT_TEMPLATES = {
+  up: [
+    (n) => `[특급 정보] "${n}" 종목에 초대형 투자 자금이 은밀하게 몰리고 있다는 첩보입니다! 다음 주가 반영 시 폭등이 유력합니다.`,
+    (n) => `[내부자 정보] "${n}"가 조만간 깜짝 발표를 준비 중이라는 소문이 있습니다. 다음 정산에서 큰 상승이 예상됩니다.`,
+    (n) => `[극비 첩보] "${n}" 관련 대형 계약이 물밑에서 성사 직전이라고 합니다. 다음 주가 반영 때 급등할 가능성이 매우 높습니다.`
+  ],
+  down: [
+    (n) => `[위험 정보] "${n}" 종목에서 심상치 않은 대량 매도 물량이 감지되고 있습니다! 다음 주가 반영 시 폭락이 우려됩니다.`,
+    (n) => `[내부자 경고] "${n}" 관련 악재가 조만간 터질 것이라는 소문이 여의도에 파다합니다. 다음 정산에서 큰 하락이 예상됩니다.`,
+    (n) => `[극비 첩보] "${n}"의 숨겨진 리스크가 곧 수면 위로 드러날 것이라고 합니다. 다음 주가 반영 때 급락할 가능성이 매우 높습니다.`
+  ]
+};
+function makeHintMessage(stockName, dir) {
+  const pool = HINT_TEMPLATES[dir];
+  const gen = pool[Math.floor(Math.random() * pool.length)];
+  return `${gen(stockName)}\n\n※ 다음 "다음 주가 반영" 시 해당 종목이 큰 폭으로 ${dir==='up' ? '상승' : '하락'}합니다. 남은 거래 시간 동안 전략적으로 활용하세요!`;
+}
 
 let state = {
   selectedClass: null,
@@ -490,7 +500,8 @@ let state = {
   stocks: JSON.parse(JSON.stringify(STOCKS)),
   teams: [],
   currentNews: [],
-  miniWinner: null
+  miniWinner: null,
+  pendingBigMover: null  // {stock, dir} — 찌라시로 예약된 다음 대형 변동 종목
 };
 
 // 최적화를 위한 데이터 캐싱 변수
@@ -624,6 +635,7 @@ function initFirebaseSync() {
     state.sessionEnded = val.sessionEnded || false;
     state.sessionEndMessage = val.sessionEndMessage || '';
     state.lastSessionSnapshot = val.lastSessionSnapshot || null;
+    state.pendingBigMover = val.pendingBigMover || null;
 
     updateHeaderUI();
 
@@ -759,31 +771,54 @@ function generateBalancedNewsAndPrices() {
   let upStocks = indices.slice(0, 5);
   let downStocks = indices.slice(5, 10);
 
-  let newsUpStocks = upStocks.slice(0, 2);
-  let newsDownStocks = downStocks.slice(0, 2);
+  // 🔥 찌라시로 예약된 "대형 변동 종목"이 있으면 해당 인덱스를 찾는다
+  let bigMoverIdx = null;
+  let bigMoverDir = null;
+  if (state.pendingBigMover && state.pendingBigMover.stock) {
+    const foundIdx = state.stocks.findIndex(s => s.name === state.pendingBigMover.stock);
+    if (foundIdx >= 0) {
+      bigMoverIdx = foundIdx;
+      bigMoverDir = state.pendingBigMover.dir;
+      // 대형 변동 종목의 up/down 그룹을 힌트 방향에 맞게 강제 배정
+      upStocks = upStocks.filter(i => i !== bigMoverIdx);
+      downStocks = downStocks.filter(i => i !== bigMoverIdx);
+      if (bigMoverDir === 'up') upStocks.push(bigMoverIdx);
+      else downStocks.push(bigMoverIdx);
+    }
+  }
+
+  // 공개 헤드라인 뉴스는 "대형 변동 종목"을 제외한 종목 중에서만 선정 (작은 변동 종목만 노출)
+  let newsCandidateUp = upStocks.filter(i => i !== bigMoverIdx);
+  let newsCandidateDown = downStocks.filter(i => i !== bigMoverIdx);
+  let newsUpStocks = newsCandidateUp.slice(0, 2);
+  let newsDownStocks = newsCandidateDown.slice(0, 2);
   let headlineIndices = [...newsUpStocks, ...newsDownStocks];
-  headlineIndices.sort(() => Math.random() - 0.5); 
+  headlineIndices.sort(() => Math.random() - 0.5);
 
   let chosenNews = [];
 
-  for(let idx=0; idx<10; idx++) {
+  for (let idx = 0; idx < 10; idx++) {
     const sName = state.stocks[idx].name;
     const targetDir = upStocks.includes(idx) ? 'up' : 'down';
-    
+    const isBigMover = (idx === bigMoverIdx);
+
     let newsPool = targetDir === 'up' ? RANDOM_NEWS_POOL.up : RANDOM_NEWS_POOL.down;
     let selectedNews = newsPool[Math.floor(Math.random() * newsPool.length)];
-    
-    let rate = 0.05 + Math.random() * 0.25;
-    if(targetDir === 'down') rate = -rate;
+
+    // 📰 공개 뉴스/일반 종목 = 소폭 변동 (3~11%) / 🤫 찌라시 대형 변동 종목 = 대폭 변동 (35~60%)
+    let rate = isBigMover
+      ? (0.35 + Math.random() * 0.25)
+      : (0.03 + Math.random() * 0.08);
+    if (targetDir === 'down') rate = -rate;
 
     let oldPrice = state.stocks[idx].price;
     let newPrice = Math.floor(oldPrice * (1 + rate));
-    if(newPrice < 5000) newPrice = 5000;
-    
+    if (newPrice < 5000) newPrice = 5000;
+
     state.stocks[idx].prevPrice = oldPrice;
     state.stocks[idx].price = newPrice;
 
-    if(headlineIndices.includes(idx)) {
+    if (headlineIndices.includes(idx)) {
       chosenNews.push({
         stock: sName,
         dir: targetDir,
@@ -795,7 +830,10 @@ function generateBalancedNewsAndPrices() {
 
   const currentDbRef = db.ref(`games/class_${state.selectedClass}`);
   currentDbRef.child('stocks').set(state.stocks).then(() => {
-    currentDbRef.child('meta/currentNews').set(chosenNews);
+    currentDbRef.child('meta').update({
+      currentNews: chosenNews,
+      pendingBigMover: null  // 이번 정산에 사용했으므로 예약 초기화
+    });
   });
 }
 
@@ -996,16 +1034,19 @@ function setupDOMEvents() {
     }
     const tNum = mgSelectedWinner.replace('모둠','').replace('팀','').trim();
     
-    // 🔥 익명 빅이슈 찌라시 투하!
+    // 🔥 미니게임 우승 특권: 실제 대형 변동 종목 찌라시 투하!
     if(mgSelectedReward === 'hint' || mgSelectedReward === 'both') {
-      const randomRumor = SECRET_RUMOR_POOL[Math.floor(Math.random() * SECRET_RUMOR_POOL.length)];
+      const rStock = STOCKS[Math.floor(Math.random() * STOCKS.length)];
+      const dir = Math.random() > 0.5 ? 'up' : 'down';
+      const hintMsg = makeHintMessage(rStock.name, dir);
 
       metaRef.update({
-        miniWinner: mgSelectedWinner + '팀'
+        miniWinner: mgSelectedWinner + '팀',
+        pendingBigMover: { stock: rStock.name, dir }
       });
-      
+
       db.ref(`games/class_${state.selectedClass}/teams/${tNum}/secretMessage`).set(
-        `[미니게임 우승 특권! 극비 찌라시 입수]\n\n${randomRumor}\n\n※ 해당 찌라시(소문)는 사실일 수도, 거짓일 수도 있습니다. 남은 시장이 열리면 이 정보를 바탕으로 혜안을 발휘하세요!`
+        `[🏆 미니게임 우승 특권! 극비 찌라시 입수]\n\n${hintMsg}`
       );
     }
 
@@ -1061,10 +1102,12 @@ function setupDOMEvents() {
   bindBtn('btnSendSecret', () => {
     const team = document.getElementById('targetTeamSelect').value;
     if(!team) return alert('대상을 선택하세요.');
-    const randomRumor = SECRET_RUMOR_POOL[Math.floor(Math.random() * SECRET_RUMOR_POOL.length)];
-    const msg = `[선생님 특별 첩보 투하]\n\n${randomRumor}\n\n※ 해당 찌라시(소문)는 사실일 수도, 거짓일 수도 있습니다. 신중하게 판단하세요!`;
+    const rStock = STOCKS[Math.floor(Math.random() * STOCKS.length)];
+    const dir = Math.random() > 0.5 ? 'up' : 'down';
+    const msg = makeHintMessage(rStock.name, dir);
+    metaRef.update({ pendingBigMover: { stock: rStock.name, dir } });
     db.ref(`games/class_${state.selectedClass}/teams/${team}/secretMessage`).set(msg);
-    alert(`${team}모둠에 랜덤 찌라시를 실시간 투하했습니다.`);
+    alert(`${team}모둠에 "${rStock.name}" 종목 찌라시를 투하했습니다!\n다음 "다음 주가 반영" 시 해당 종목이 크게 ${dir==='up'?'상승':'하락'}합니다.`);
   });
 
   bindBtn('btnApplyCashMod', () => {
