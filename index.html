@@ -257,9 +257,12 @@
         </div>
         
         <div class="mt-5 p-4 rounded-3xl bg-white/8 border border-white/10">
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <h3 class="text-lg font-black text-emerald-400">📊 모둠별 실시간 접속 및 자산 현황</h3>
-            <span class="text-xs text-slate-400">학생들의 실시간 접속(초록불) 여부와 자산 변동이 즉시 표시됩니다.</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 hidden md:inline">학생 접속(초록불)과 자산 변동이 즉시 표시됩니다.</span>
+              <button id="btnToggleAssets" class="btn px-3 py-1.5 rounded-xl bg-white/10 text-xs font-black whitespace-nowrap">🙈 금액 가리기</button>
+            </div>
           </div>
           <div id="hostTeamAssetsArea" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
              </div>
@@ -275,7 +278,10 @@
             <h2 id="resultTitle" class="text-2xl md:text-3xl font-black">자산 및 랭킹 전광판</h2>
             <p id="resultDesc" class="text-slate-300 text-sm mt-1">보유 자금과 주가 평가액이 통합 합산된 순위입니다.</p>
           </div>
-          <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 컨트롤 대시보드 복귀</button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btnResultNext" class="btn px-5 py-3 rounded-2xl bg-lime-400 text-slate-950 font-black shadow-lg" style="display:none">▶ 다음 라운드 진행하기 →</button>
+            <button id="btnBackHost" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 컨트롤 대시보드 복귀</button>
+          </div>
         </div>
         <div id="resultArea" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
       </div>
@@ -539,6 +545,8 @@ let state = {
   currentNews: [],
   miniWinner: null,
   stockPlan: null,       // 이번 라운드 뉴스와 짝지어진 "다음 반영 때 적용할 변동 계획"
+  hideAssets: false,     // 🙈 모둠 금액 가리기 토글
+  pendingRoundAdvance: false, // 🌙 주가 반영 후 아직 다음 라운드로 안 넘어간 상태
   pendingBigMover: null  // {stock, dir} — 찌라시로 예약된 다음 대형 변동 종목
 };
 
@@ -1078,15 +1086,23 @@ function setupDOMEvents() {
        alert('반드시 [거래 마감 (시장 정지)] 처리를 진행한 후 다음 주가를 산출해야 합니다.');
        return;
     }
+    // 이미 이번 라운드 주가가 반영된 상태면 재반영하지 않고 결과 화면만 다시 보여준다
+    if(state.pendingRoundAdvance) {
+      alert('이미 이번 라운드 주가가 반영되었습니다. [다음 라운드 진행하기]를 눌러 넘어가세요.');
+      showPriceRevealScreen(state.round);
+      return;
+    }
     // ✅ 발표된 뉴스(계획)대로 실제 주가를 반영 → 뉴스와 주가 방향이 일치한다
     applyPlannedPrices();
-    // 🌙 변동 결과를 한눈에 보여주는 리빌 화면 (다음 라운드는 교사가 버튼을 눌러야 진행)
+    state.pendingRoundAdvance = true;   // 다음 라운드 진행 대기 상태
+    // 🌙 변동 결과를 한눈에 보여주는 리빌 화면
     showPriceRevealScreen(state.round);
   });
 
-  // 🌙 리빌 화면 - 다음 라운드 진행하기
-  bindBtn('btnRevealNext', () => {
+  // 🌙 다음 라운드로 실제 진행 (리빌 화면 / 순위 화면 어디서 눌러도 동일)
+  function proceedToNextRound() {
     const finished = state.round;
+    state.pendingRoundAdvance = false;
 
     // 2라운드 마감은 미니게임으로 (기존 동작 유지)
     if(finished === 2) {
@@ -1101,15 +1117,34 @@ function setupDOMEvents() {
       switchScreen('screen-host');
       alert(`${nextRound}라운드 뉴스가 발표되었습니다! 뉴스를 확인하고 [거래 개장]으로 시장을 열어주세요.`);
     });
-  });
+  }
+
+  // 🌙 리빌 화면 - 다음 라운드 진행하기
+  bindBtn('btnRevealNext', () => proceedToNextRound());
+  // 🌙 순위 화면 - 다음 라운드 진행하기 (자산 확인 후에도 진행 가능)
+  bindBtn('btnResultNext', () => proceedToNextRound());
 
   // 🌙 리빌 화면 - 자산 순위 먼저 보기 (선택)
   bindBtn('btnRevealRanking', () => {
     showRankingScreen();
   });
 
+  // 🙈 모둠 금액 가리기 / 보이기 토글
+  bindBtn('btnToggleAssets', () => {
+    state.hideAssets = !state.hideAssets;
+    const b = document.getElementById('btnToggleAssets');
+    if(b) {
+      b.innerText = state.hideAssets ? '👁 금액 보이기' : '🙈 금액 가리기';
+      b.classList.toggle('bg-yellow-400', state.hideAssets);
+      b.classList.toggle('text-slate-950', state.hideAssets);
+      b.classList.toggle('bg-white/10', !state.hideAssets);
+    }
+    renderHostTeamAssets(latestTeamsObj || {});
+  });
+
   bindBtn('btnEndGameEarly', () => {
     if(confirm('정말로 게임을 이대로 완전히 종료하고 최종 순위 결과를 띄우시겠습니까?')) {
+      state.pendingRoundAdvance = false;
       metaRef.update({ marketOpen: false });
       stopTimer();
       showRankingScreen();
@@ -1198,7 +1233,7 @@ function setupDOMEvents() {
     const msg = makeHintMessage(rStock.name, dir);
     metaRef.update({ pendingBigMover: { stock: rStock.name, dir } });
     db.ref(`games/class_${state.selectedClass}/teams/${team}/secretMessage`).set(msg);
-    alert(`${team}모둠에 "${rStock.name}" 종목 찌라시를 투하했습니다!\n다음 "다음 주가 반영" 시 해당 종목이 크게 ${dir==='up'?'상승':'하락'}합니다.`);
+    alert(`✅ ${team}모둠에 극비 찌라시를 은밀하게 전송했습니다.\n(어떤 종목·방향인지는 해당 모둠 화면에만 표시됩니다.)`);
   });
 
   bindBtn('btnApplyCashMod', () => {
@@ -1419,15 +1454,22 @@ function renderHostTeamAssets(teamsObj) {
     }
 
     const isOnline = tData.online === true;
-    
+
+    const totalDisplay = state.hideAssets
+      ? `<span class="tracking-widest text-slate-500">₩ ●●●●●</span>`
+      : `${Math.floor(totalAsset).toLocaleString()}원`;
+    const cashDisplay = state.hideAssets
+      ? `가용 현금: <span class="tracking-widest">•••••</span>`
+      : `가용 현금: ${Math.floor(tData.cash || 0).toLocaleString()}원`;
+
     html += `
       <div class="p-3 rounded-2xl ${isOnline ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/10'} border flex flex-col gap-1.5 transition-all">
         <div class="flex items-center justify-between">
           <span class="text-sm font-black ${isOnline ? 'text-emerald-400' : 'text-slate-300'}">${i}모둠</span>
           <div class="dot ${isOnline ? 'on' : ''}"></div>
         </div>
-        <div class="text-lg font-black text-white mt-1">${Math.floor(totalAsset).toLocaleString()}원</div>
-        <div class="text-[10px] text-slate-400">가용 현금: ${Math.floor(tData.cash || 0).toLocaleString()}원</div>
+        <div class="text-lg font-black text-white mt-1">${totalDisplay}</div>
+        <div class="text-[10px] text-slate-400">${cashDisplay}</div>
       </div>
     `;
   }
@@ -1509,6 +1551,10 @@ function showRankingScreen() {
       <div class="text-[10px] text-slate-500 border-t border-white/5 pt-1.5 mt-1 truncate">소속원: ${c.members}</div>
     </div>
   `).join('');
+
+  // 🌙 주가 반영 직후라면(다음 라운드 대기 상태) 여기서도 진행 버튼을 노출
+  const rn = document.getElementById('btnResultNext');
+  if(rn) rn.style.display = state.pendingRoundAdvance ? '' : 'none';
 }
 
 function buildQrGrid() {
