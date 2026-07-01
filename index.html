@@ -1223,5 +1223,129 @@ function executeTrade(stockIdx, type) {
   });
 }
 </script>
+<script>
+// 1. 장 열림/닫힘 UI가 즉각 반영되도록 강제 수정
+window.initFirebaseSync = function() {
+  if (!metaRef) return;
+  metaRef.on('value', snapshot => {
+    const val = snapshot.val();
+    if(!val) return;
+    state.round = val.round || 1;
+    state.marketOpen = val.marketOpen || false;
+    state.currentNews = val.currentNews || [];
+    state.miniWinner = val.miniWinner || null;
+    state.hintStock = val.hintStock || null;
+    state.hintDirection = val.hintDirection || null;
+
+    if (typeof updateHeaderUI === 'function') updateHeaderUI();
+
+    if(state.isHost) {
+      const hClass = document.getElementById('hostClass');
+      const hRound = document.getElementById('hostRound');
+      const hStatus = document.getElementById('hostStatus');
+      if(hClass) hClass.innerText = state.selectedClass + '반';
+      if(hRound) hRound.innerText = state.round + ' 라운드';
+      if(hStatus) {
+        hStatus.innerText = state.marketOpen ? '🔴 실시간 주문 활성화 (개장)' : '🔒 정산 및 통제 상태 (폐장)';
+        hStatus.className = state.marketOpen ? 'text-xl font-black text-rose-400 animate-pulse' : 'text-xl font-black text-emerald-300';
+      }
+      if (typeof renderHostNews === 'function') renderHostNews();
+    } else {
+      const stuTeamBadge = document.getElementById('stuTeamBadge');
+      const stuTeamWait = document.getElementById('stuTeamWait');
+      const stuTeam = document.getElementById('stuTeam');
+      if(stuTeamBadge) stuTeamBadge.innerText = state.teamName;
+      if(stuTeamWait) stuTeamWait.innerText = state.teamName;
+      if(stuTeam) stuTeam.innerText = state.teamName;
+      
+      const marketBadge = document.getElementById('stuMarketBadge');
+      if (marketBadge) {
+        marketBadge.innerText = state.marketOpen ? '🔓 장 열림' : '🔒 장 닫힘';
+        marketBadge.className = state.marketOpen ? 'px-2 py-0.5 rounded font-black text-[10px] bg-emerald-500/20 text-emerald-400' : 'px-2 py-0.5 rounded font-black text-[10px] bg-rose-500/20 text-rose-400';
+      }
+
+      // [핵심] 장이 열리면 모래시계 대기화면 숨기고 거래화면 즉시 표시
+      const stuWaiting = document.getElementById('stuWaiting');
+      const stuGame = document.getElementById('stuGame');
+      const stuMarketNotice = document.getElementById('stuMarketNotice');
+
+      if (state.marketOpen) {
+        if(stuWaiting) stuWaiting.style.display = 'none';
+        if(stuGame) stuGame.style.display = 'block';
+        if(stuMarketNotice) stuMarketNotice.classList.add('hidden');
+      } else {
+        if(stuWaiting) stuWaiting.style.display = 'none'; 
+        if(stuGame) stuGame.style.display = 'block';
+        if(stuMarketNotice) stuMarketNotice.classList.remove('hidden');
+      }
+
+      if (typeof updateStudentUI === 'function') updateStudentUI();
+      if (typeof renderTradeArea === 'function') renderTradeArea();
+    }
+  });
+
+  if (stocksRef) {
+    stocksRef.on('value', snapshot => {
+      const val = snapshot.val();
+      if(val) state.stocks = val;
+      if(!state.isHost && typeof renderTradeArea === 'function') renderTradeArea();
+    });
+  }
+}
+
+// 2. 여러 명이 동시에 주문해도 돈이 꼬이지 않게 고친 매매 로직
+window.executeTrade = function(stockIdx, type) {
+  if(!state.marketOpen) return alert('시장이 닫혀있어 주문을 제출할 수 없습니다.');
+  const qty = parseInt(document.getElementById(`input_qty_${stockIdx}`).value) || 0;
+  if(qty <= 0) return alert('주문 수량은 1주 이상이어야 합니다.');
+
+  const stock = state.stocks[stockIdx];
+  const totalPrice = stock.price * qty;
+  const pureKey = state.teamName.replace('팀','').trim();
+  const specificTeamRef = db.ref(`games/class_${state.selectedClass}/teams/${pureKey}`);
+  
+  specificTeamRef.transaction((currentData) => {
+    if (currentData === null) return { cash: 1000000, inventory: [0,0,0,0,0,0,0,0,0,0] }; 
+    let curCash = currentData.cash || 0;
+    let inv = currentData.inventory || [0,0,0,0,0,0,0,0,0,0];
+
+    if (type === 'buy') {
+      if (curCash < totalPrice) return; 
+      currentData.cash = curCash - totalPrice;
+      inv[stockIdx] = (inv[stockIdx] || 0) + qty;
+    } else {
+      if ((inv[stockIdx] || 0) < qty) return; 
+      currentData.cash = curCash + totalPrice;
+      inv[stockIdx] = (inv[stockIdx] || 0) - qty;
+    }
+    currentData.inventory = inv;
+    return currentData;
+  }, (error, committed) => {
+    if (error) alert('서버 통신 에러가 발생했습니다.');
+    else if (!committed) alert(type === 'buy' ? '❌ 매수 실패: 잔액 부족' : '❌ 매도 실패: 보유 주식 부족');
+  });
+}
+
+// 3. 누락되어 있던 선생님/학생 버튼 기능 강제 연결
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    // 선생님 장 열기
+    const btnRoundStart = document.getElementById('btnRoundStart');
+    if(btnRoundStart) btnRoundStart.onclick = () => {
+      if(metaRef) metaRef.update({ marketOpen: true }).then(() => alert('시장이 개장되었습니다! 학생 화면이 열립니다.'));
+    };
+
+    // 선생님 장 닫기
+    const btnRoundEnd = document.getElementById('btnRoundEnd');
+    if(btnRoundEnd) btnRoundEnd.onclick = () => {
+      if(metaRef) metaRef.update({ marketOpen: false }).then(() => alert('시장이 마감되었습니다. 학생 주문이 차단됩니다.'));
+    };
+
+    // 학생 동기화 버튼 (새로고침)
+    const btnStuRefresh = document.getElementById('btnStuRefresh');
+    if(btnStuRefresh) btnStuRefresh.onclick = () => window.location.reload(); 
+  }, 1000); // 1초 뒤에 확실하게 버튼에 기능 주입
+});
+</script>
 </body>
 </html>
