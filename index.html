@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>구갈중 주식왕 (완전 최적화 및 실시간 감시망 탑재)</title>
+  <title>구갈중 주식왕 (등락률 표시 & 무작위 찌라시 탑재)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -98,16 +98,16 @@
         <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
           <div>
             <h2 class="text-2xl md:text-3xl font-black"><span id="rosterLabel">-반</span> 명단 입력</h2>
-            <p class="text-slate-300 text-sm mt-1">이름을 줄바꿈, 쉼표, 또는 띄어쓰기로 입력하면 균등하게 6개 팀으로 배정됩니다.</p>
+            <p class="text-slate-300 text-sm mt-1">이름을 줄바꿈(엔터), 쉼표, 또는 띄어쓰기로 입력하면 6개 팀으로 자동 배정됩니다.</p>
           </div>
           <div class="flex gap-2">
             <button id="btnBackSelect" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">← 뒤로</button>
-            <button id="btnAssign" class="btn px-5 py-3 rounded-2xl bg-indigo-500 text-white font-black">6팀 랜덤 배정</button>
+            <button id="btnAssign" class="btn px-5 py-3 rounded-2xl bg-indigo-500 text-white font-black shadow-lg">6팀 랜덤 배정 실행</button>
           </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
-            <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단 입력</label>
+            <label class="block text-sm font-bold mb-2 text-slate-200">학생 명단 입력구역</label>
             <textarea id="studentInput" class="w-full h-72 rounded-2xl p-4 text-slate-900 outline-none focus:ring-4 focus:ring-cyan-300 text-sm" placeholder="예시 1) 엔터 분리&#10;김민준&#10;이서연&#10;박지후&#10;&#10;예시 2) 쉼표 나열&#10;김민준, 이서연, 박지후"></textarea>
           </div>
           <div class="p-4 rounded-3xl bg-white/8 border border-white/10">
@@ -115,12 +115,14 @@
               <h3 class="text-xl font-black">팀 배정 결과</h3>
               <span class="px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black">6팀 고정</span>
             </div>
-            <div id="teamPreview" class="grid grid-cols-1 md:grid-cols-2 gap-3 ms max-h-96 overflow-auto text-sm"></div>
+            <div id="teamPreview" class="grid grid-cols-1 md:grid-cols-2 gap-3 ms max-h-96 overflow-auto text-sm">
+              <div class="text-slate-400 text-xs col-span-full">명단을 입력하고 배정 버튼을 눌러주세요.</div>
+            </div>
           </div>
         </div>
         <div id="rosterNext" class="hidden mt-5 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3">
-          <div class="font-black text-emerald-300 text-sm">✓ 팀 배정 완료! 이제 접속 대기실로 이동하여 학생들이 로그인하게 하세요.</div>
-          <button id="btnGoLobby" class="btn px-5 py-3 rounded-2xl bg-emerald-400 text-slate-950 font-black whitespace-nowrap">접속 대기 시작 →</button>
+          <div class="font-black text-emerald-300 text-sm">✓ 완벽하게 팀 배정이 완료되었습니다! 다음 단계로 넘어가주세요.</div>
+          <button id="btnGoLobby" class="btn px-5 py-3 rounded-2xl bg-emerald-400 text-slate-950 font-black whitespace-nowrap shadow-lg">접속 대기 시작 →</button>
         </div>
       </div>
     </section>
@@ -161,6 +163,7 @@
               <button id="btnRoundEnd" class="btn px-5 py-3 rounded-2xl bg-rose-500 text-white font-black">⏸ 거래 마감 (시장 정지)</button>
               <button id="btnNextDay" class="btn px-5 py-3 rounded-2xl bg-purple-500 text-white font-black shadow-lg">🌙 다음 주가 무작위 반영</button>
               <button id="btnEndGameEarly" class="btn px-5 py-3 rounded-2xl bg-gray-600 text-white font-black shadow-lg">🛑 게임 조기 종료 (결과)</button>
+              <button id="btnToLobby" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">QR 방</button>
             </div>
             <div class="flex items-center gap-2 p-3 rounded-2xl bg-white/6 border border-white/10 flex-wrap">
               <span class="text-xs font-black text-slate-300">⏱ 제한 타이머:</span>
@@ -270,7 +273,7 @@
           <div>
             <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400 text-slate-900 font-black text-sm mb-2">🎮 EVENT STAGE</div>
             <h2 class="text-2xl font-black"><span id="mgRoundTitle">2</span>라운드 종료: 학급 단체 미니게임 타임</h2>
-            <p class="text-slate-300 text-sm mt-1">미니게임 우승팀을 고르고 보상을 부여하면 3라운드 주가 정산 시 폭등/폭락 효과와 직결됩니다!</p>
+            <p class="text-slate-300 text-sm mt-1">미니게임 우승팀을 고르고 보상을 부여하면 해당 모둠에 무작위 여의도 찌라시가 은밀하게 전송됩니다!</p>
           </div>
           <button id="btnMiniSkip" class="btn px-4 py-2 rounded-2xl bg-white/10 font-bold">이벤트 스킵 →</button>
         </div>
@@ -298,8 +301,8 @@
             <div class="text-sm font-black text-slate-300 mb-3">🎁 승리 보상 패키지 선택</div>
             <div class="space-y-3">
               <button id="mgRewardHint" class="mg-btn w-full p-4 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-left">
-                <div class="font-black text-indigo-300">🤫 3라운드 주가 변동 연계 독점 힌트 (추천)</div>
-                <div class="text-xs text-slate-400 mt-1">우승팀 학생 화면에만 3R 최종 정산 시 한계를 뚫고 반영될 폭등/폭락 종목 첩보가 오픈됩니다.</div>
+                <div class="font-black text-indigo-300">🤫 무작위 증권가 찌라시 투척 (추천)</div>
+                <div class="text-xs text-slate-400 mt-1">특정 주식이 조작되는 것이 아니라, 우승팀에게만 특정 섹터나 업계에 도는 무작위 소문을 은밀하게 제공합니다.</div>
               </button>
               <button id="mgRewardCash" class="mg-btn w-full p-4 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-left">
                 <div class="font-black text-emerald-300">💰 추가 보너스 투자금 지급</div>
@@ -310,7 +313,7 @@
                 <span class="text-slate-300 text-sm flex items-center">원</span>
               </div>
               <button id="mgRewardBoth" class="mg-btn w-full p-4 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-left">
-                <div class="font-black text-yellow-300">✨ 강력 특권 올인원 (비밀 힌트 + 보너스 현금)</div>
+                <div class="font-black text-yellow-300">✨ 강력 특권 올인원 (찌라시 + 보너스 현금)</div>
               </button>
             </div>
             <button id="btnMiniDone" class="btn w-full mt-5 py-4 rounded-2xl bg-lime-400 text-slate-950 font-black text-lg">보상 배포 완료 및 3R 진입 ▶</button>
@@ -333,13 +336,13 @@
         </div>
       </div>
       <div id="stuSecretBox" class="hidden mb-4 p-4 rounded-2xl bg-cyan-400/20 border-2 border-cyan-400 text-cyan-100 animate-pulse">
-        <div class="font-black text-xs flex items-center gap-1">🤫 [우리 모둠 보안 철저] 독점 정보 도착!</div>
-        <div id="stuSecretText" class="text-sm mt-1.5 text-yellow-300 font-black tracking-wide bg-black/20 p-2 rounded-xl"></div>
+        <div class="font-black text-xs flex items-center gap-1">🤫 [모둠 단독 입수] 여의도 증권가 찌라시!</div>
+        <div id="stuSecretText" class="text-sm mt-1.5 text-yellow-300 font-black tracking-wide bg-black/20 p-2 rounded-xl whitespace-pre-line"></div>
       </div>
       <div id="stuWaiting" class="glass rounded-3xl p-8 text-center">
         <div class="text-5xl mb-3">⏳</div>
         <h2 class="text-xl font-black mb-1">시장이 곧 개장됩니다</h2>
-        <p class="text-slate-400 text-xs mb-4">선생님이 화면에서 거래 시작을 누르면 실시간 시세표가 동기화됩니다.</p>
+        <p class="text-slate-400 text-xs mb-4">선생님이 화면에서 거래 시작을 누르면 주문창이 동기화됩니다.</p>
         <div class="p-3 rounded-xl bg-white/5 border border-white/10">
           <div class="text-[10px] text-slate-400">배정 소속 확인</div>
           <div id="stuTeamWait" class="text-2xl font-black text-cyan-300">-</div>
@@ -369,7 +372,7 @@
         </div>
       </div>
       <div id="mgStuSecretBox" class="hidden mb-4 p-4 rounded-2xl bg-cyan-400/20 border-2 border-cyan-400 text-cyan-100">
-        <div class="font-black text-xs">🤫 [미니게임 우승 축하!] 독점 정보가 봉인 해제되었습니다</div>
+        <div class="font-black text-xs">🤫 [미니게임 우승 축하!] 특권 찌라시가 봉인 해제되었습니다</div>
         <div id="mgStuSecretText" class="text-xs mt-1 text-yellow-300 font-bold whitespace-pre-line bg-black/30 p-2.5 rounded-xl"></div>
       </div>
       <div class="glass rounded-3xl p-8 text-center">
@@ -377,7 +380,7 @@
         <h2 class="text-2xl font-black mb-1 text-yellow-300">교실 이벤트 돌입!</h2>
         <div id="mgStuName" class="text-md font-black mb-3 text-cyan-300">미니게임 대기 중</div>
         <p class="text-slate-300 text-xs leading-relaxed">
-          대형 화면이나 선생님의 게임 룰 안내에 동참하세요.<br>우승 시 3라운드 주가를 뒤흔들 핵심 특권 힌트가 들어옵니다!
+          대형 화면이나 선생님의 게임 룰 안내에 동참하세요.<br>우승 시 시장을 뒤흔들 핵심 찌라시가 우리 팀에만 들어옵니다!
         </p>
       </div>
     </section>
@@ -451,6 +454,19 @@ const RANDOM_NEWS_POOL = {
   ]
 };
 
+// 🔥 [신규 추가] 미니게임 우승팀에게 지급되는 "섹터 무작위 찌라시 풀"
+const SECRET_RUMOR_POOL = [
+  "여의도 증권가 찌라시: 조만간 '친환경' 및 '신재생' 섹터에 정부 대규모 지원금이 풀릴 예정이라고 합니다. 미리 선점하세요!",
+  "증권가 속보: 외국인 큰손 투자자들이 최근 '게임/IT' 관련주를 은밀하게 대량 매집하고 있다는 정황이 포착되었습니다.",
+  "미확인 루머: 모 대기업 회장의 건강 악화설이 돌고 있습니다. '금융' 관련 지주사 주식이 요동칠 수 있습니다.",
+  "산업계 소문: 글로벌 '반도체' 공급망에 심각한 차질이 생겼다는 내부 고발이 있었습니다. 납품 지연과 폭락을 주의하세요.",
+  "연예계 찌라시: 초대형 톱스타의 전속계약 해지 스캔들이 터질 준비를 하고 있다는 기자의 귀띔이 있었습니다. '엔터'주 폭락 조심!",
+  "테크계 소문: 새로운 'AI' 기술 혁신으로 인해 조만간 기존 산업 구조를 뒤엎을 중대 발표가 있을 예정입니다.",
+  "바이오 업계 찌라시: 극비리에 진행 중인 신약 임상 3상 통과가 유력한 기업이 있다는 소문이 돕니다.",
+  "글로벌 찌라시: '우주항공' 분야에 해외 억만장자의 막대한 비밀 투자가 진행 중이라는 소문이 있습니다.",
+  "산업가 찌라시: '레저/스포츠' 업계가 역대급 호황을 맞아 이번 분기 실적이 폭발할 것이라는 긍정적 소식입니다."
+];
+
 let state = {
   selectedClass: null,
   isHost: false,
@@ -460,12 +476,9 @@ let state = {
   stocks: JSON.parse(JSON.stringify(STOCKS)),
   teams: [],
   currentNews: [],
-  miniWinner: null,
-  hintStock: null,
-  hintDirection: null
+  miniWinner: null
 };
 
-// 최적화를 위한 데이터 캐싱 변수
 let latestTeamsObj = {};
 let timerInterval = null;
 let mgSelectedGame = '';
@@ -476,9 +489,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const pClass = urlParams.get('c');
 const pTeam = urlParams.get('t');
 
-/* ══════════ 초기 실행 안전장치 (우선 실행) ══════════ */
+/* ══════════ 초기 실행 ══════════ */
 window.onload = function() {
-  // 어떤 일이 있어도 클릭 이벤트부터 무조건 세팅하여 먹통 방지
   setupDOMEvents();
 
   if(pClass && pTeam) {
@@ -488,11 +500,11 @@ window.onload = function() {
     assignFirebaseNode(pClass);
     initFirebaseSync();
     
-    // 🔥 학생: 실시간 QR 접속 상태(Online) 기록 시스템
+    // 학생 접속 시 온라인 센서 ON
     const pureKey = pTeam.replace('팀','').replace('모둠','').trim();
     const onlineRef = db.ref(`games/class_${pClass}/teams/${pureKey}/online`);
-    onlineRef.set(true);                // 들어오면 true
-    onlineRef.onDisconnect().set(false); // 창 닫거나 튕기면 자동으로 false
+    onlineRef.set(true);                
+    onlineRef.onDisconnect().set(false); 
     
     switchScreen('screen-student');
   } else if(pClass && urlParams.get('mode')==='host') {
@@ -506,13 +518,11 @@ window.onload = function() {
   }
 };
 
-/* ══════════ 튕김 방지를 위한 버튼 연결 보호막 ══════════ */
 function bindBtn(id, fn) {
   const el = document.getElementById(id);
   if (el) el.onclick = fn;
 }
 
-// ⚠️ 메모리 초과 최적화: 다른 반을 누르면 이전 반 정보 추적을 끊음
 function assignFirebaseNode(cls) {
   if(metaRef) metaRef.off();
   if(stocksRef) stocksRef.off();
@@ -566,8 +576,6 @@ function initFirebaseSync() {
     state.marketOpen = val.marketOpen || false;
     state.currentNews = val.currentNews || [];
     state.miniWinner = val.miniWinner || null;
-    state.hintStock = val.hintStock || null;
-    state.hintDirection = val.hintDirection || null;
 
     updateHeaderUI();
 
@@ -588,16 +596,14 @@ function initFirebaseSync() {
         switchScreen('screen-minigame-stu');
         document.getElementById('mgStuName').innerText = `🎯 진행 서바이벌: ${val.miniGameName || '미니게임 타임'}`;
         const mSBox = document.getElementById('mgStuSecretBox');
-        if(state.miniWinner === state.teamName && state.hintStock) {
+        
+        if(state.miniWinner === state.teamName) {
           mSBox.classList.remove('hidden');
-          document.getElementById('mgStuSecretText').innerText = `[우승 특별 보상] 3라운드 정산 대비 힌트:\n다음 주가 반영 시 【${state.hintStock}】 종목이 시장의 한계를 완전히 부수고 초대형 ${state.hintDirection==='up'?'폭등(🔥)':'폭락(📉)'} 구조를 강제 반영시킵니다. 미리 선점하세요!`;
         } else {
           mSBox.classList.add('hidden');
         }
       } else {
         switchScreen('screen-student');
-        
-        // 🔥 최적화: 시작 전 화면 통제 (모래시계 표시)
         if(state.round === 1 && !state.marketOpen && (!state.currentNews || state.currentNews.length === 0)) {
           document.getElementById('stuWaiting').style.display = 'block';
           document.getElementById('stuGame').style.display = 'none';
@@ -628,7 +634,7 @@ function initFirebaseSync() {
 
     if(state.isHost) {
       updateLobbyStatus(val);
-      renderHostTeamAssets(val); // 선생님 화면 실시간 자산 표출
+      renderHostTeamAssets(val); 
     } else {
       const pureKey = state.teamName.replace('팀','');
       const myData = val[pureKey];
@@ -645,6 +651,10 @@ function initFirebaseSync() {
         if(myData.secretMessage) {
           sBox.classList.remove('hidden');
           document.getElementById('stuSecretText').innerText = myData.secretMessage;
+          
+          // 미니게임 화면의 찌라시 텍스트도 업데이트
+          const mgSText = document.getElementById('mgStuSecretText');
+          if(mgSText) mgSText.innerText = myData.secretMessage;
         } else {
           sBox.classList.add('hidden');
         }
@@ -657,7 +667,7 @@ function initFirebaseSync() {
     if(val) state.stocks = val;
     if(state.isHost) {
       renderChartArea();
-      renderHostTeamAssets(latestTeamsObj); // 주가가 바뀌면 자산도 즉시 변경
+      renderHostTeamAssets(latestTeamsObj);
     } else {
       renderStudentTradeUI();
     }
@@ -704,18 +714,12 @@ function generateBalancedNewsAndPrices() {
     let rate = 0.05 + Math.random() * 0.25;
     if(targetDir === 'down') rate = -rate;
 
-    if(state.round === 3 && state.hintStock === sName) {
-      if(state.hintDirection === 'up') {
-        rate = 0.65;
-        selectedNews = { title: "세기의 초대형 특급 호재 발생", text: "시장의 모든 예상을 뒤엎는 메가톤급 계약이 갱신되며 주가가 미친 듯이 솟구치고 있습니다!" };
-      } else {
-        rate = -0.55;
-        selectedNews = { title: "최악의 파산 직전 사태 발발", text: "비밀리에 돌던 파산 루머가 사실로 밝혀지며 주가가 바닥을 뚫고 폭락하고 있습니다." };
-      }
-    }
-
-    let newPrice = Math.floor(state.stocks[idx].price * (1 + rate));
+    // 🔥 [등락률 표시용] 이전 가격을 백업해둡니다.
+    let oldPrice = state.stocks[idx].price;
+    let newPrice = Math.floor(oldPrice * (1 + rate));
     if(newPrice < 5000) newPrice = 5000;
+    
+    state.stocks[idx].prevPrice = oldPrice;
     state.stocks[idx].price = newPrice;
 
     if(headlineIndices.includes(idx)) {
@@ -734,7 +738,7 @@ function generateBalancedNewsAndPrices() {
   });
 }
 
-/* ══════════ 무적의 클릭 이벤트 세팅 구역 ══════════ */
+/* ══════════ 이벤트 세팅 ══════════ */
 function setupDOMEvents() {
 
   bindBtn('btnEnterClass', () => {
@@ -768,7 +772,6 @@ function setupDOMEvents() {
   bindBtn('btnBackSelect', () => switchScreen('screen-select'));
   bindBtn('btnBackRoster', () => switchScreen('screen-roster'));
 
-  // ★★★ 인공지능형 이름 분리 로직 ★★★
   bindBtn('btnAssign', () => {
     const text = document.getElementById('studentInput').value.trim();
     const previewArea = document.getElementById('teamPreview');
@@ -778,10 +781,8 @@ function setupDOMEvents() {
       return;
     }
     
-    // 줄바꿈, 쉼표, 탭 등 모든 기호를 기준으로 1차 강력 분리
     let names = text.split(/[\n\r\t,]+/).map(n => n.trim()).filter(n => n.length > 0);
     
-    // 2차 지능형 분리 (스페이스바로만 적었을 경우 방어)
     if (names.length === 1 && names[0].includes(' ')) {
       names = names[0].split(/\s+/).map(n => n.trim()).filter(n => n.length > 0);
     }
@@ -832,9 +833,7 @@ function setupDOMEvents() {
       marketOpen: false,
       isMiniGameTime: false,
       miniGameName: "",
-      miniWinner: "",
-      hintStock: "",
-      hintDirection: ""
+      miniWinner: ""
     };
 
     const clsRef = db.ref(`games/class_${state.selectedClass}`);
@@ -902,18 +901,17 @@ function setupDOMEvents() {
     }
     const tNum = mgSelectedWinner.replace('모둠','').replace('팀','').trim();
     
+    // 🔥 [수정됨] 특정 주식 강제 조작 제거 및 "무작위 찌라시" 전송 로직 탑재
     if(mgSelectedReward === 'hint' || mgSelectedReward === 'both') {
-      const rIdx = Math.floor(Math.random() * STOCKS.length);
-      const targetStock = STOCKS[rIdx].name;
-      const targetDir = Math.random() > 0.5 ? 'up' : 'down';
+      const randomRumor = SECRET_RUMOR_POOL[Math.floor(Math.random() * SECRET_RUMOR_POOL.length)];
 
       metaRef.update({
-        miniWinner: mgSelectedWinner + '팀',
-        hintStock: targetStock,
-        hintDirection: targetDir
+        miniWinner: mgSelectedWinner + '팀'
       });
       
-      db.ref(`games/class_${state.selectedClass}/teams/${tNum}/secretMessage`).set(`[미니게임 특권 획득 완수!] 돌아올 3라운드 최종 주가 변동 연계표 적용 시 【${targetStock}】 종목이 시장의 한계를 뚫어버리고 무조건 초대형 ${targetDir==='up'?'폭등(🔥)':'폭락(📉)'}으로 날아오릅니다. 남은 시장이 열리는 즉시 전략적 매매를 고려하세요!`);
+      db.ref(`games/class_${state.selectedClass}/teams/${tNum}/secretMessage`).set(
+        `[미니게임 특권 획득 완수! 극비 찌라시 입수]\n\n${randomRumor}\n\n※ 해당 찌라시(소문)는 사실일 수도, 거짓일 수도 있습니다. 남은 시장이 열리면 이 정보를 바탕으로 혜안을 발휘하세요!`
+      );
     }
 
     if(mgSelectedReward === 'cash' || mgSelectedReward === 'both') {
@@ -927,7 +925,7 @@ function setupDOMEvents() {
       marketOpen: false
     }).then(() => {
       generateBalancedNewsAndPrices();
-      alert('미니게임 연계 보상 정산이 완전히 끝났습니다. 교사 제어창으로 돌아갑니다.');
+      alert('미니게임 연계 보상 및 무작위 찌라시 정산이 완전히 끝났습니다. 대시보드로 돌아갑니다.');
       switchScreen('screen-host');
     });
   });
@@ -1065,20 +1063,38 @@ function openTvModal(idx) {
   document.getElementById('tvModal').style.display = 'flex';
 }
 
+// 🔥 [신규 추가] 주가 변동률(%) 화면 표시 로직 - 교사용
 function renderChartArea() {
   const area = document.getElementById('chartArea');
-  area.innerHTML = state.stocks.map((s, idx) => `
-    <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between text-xs">
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400 font-bold">${s.sector}</span>
-        <span class="font-black text-slate-200">${s.name}</span>
+  area.innerHTML = state.stocks.map((s, idx) => {
+    let changeHtml = '';
+    if(s.prevPrice && s.prevPrice > 0) {
+      let diff = s.price - s.prevPrice;
+      let pct = ((diff / s.prevPrice) * 100).toFixed(1);
+      if(diff > 0) {
+         changeHtml = `<span class="text-red-400 text-[10px] ml-1.5 font-bold">▲ +${pct}%</span>`;
+      } else if(diff < 0) {
+         changeHtml = `<span class="text-blue-400 text-[10px] ml-1.5 font-bold">▼ ${pct}%</span>`;
+      } else {
+         changeHtml = `<span class="text-slate-400 text-[10px] ml-1.5 font-bold">- 0.0%</span>`;
+      }
+    }
+
+    return `
+      <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400 font-bold">${s.sector}</span>
+          <span class="font-black text-slate-200">${s.name}</span>
+        </div>
+        <div class="font-black text-yellow-300 tracking-wide flex items-center">
+          ${Math.floor(s.price).toLocaleString()}원
+          ${changeHtml}
+        </div>
       </div>
-      <div class="font-black text-yellow-300 tracking-wide">${Math.floor(s.price).toLocaleString()}원</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
-// 🔥 [신규 기능] 교사용 실시간 모둠 자산 대시보드 렌더러
 function renderHostTeamAssets(teamsObj) {
   const area = document.getElementById('hostTeamAssetsArea');
   if(!area) return;
@@ -1235,7 +1251,6 @@ function updateLobbyStatus(teamsObj) {
     const tData = teamsObj[i];
     const mStr = tData && tData.members ? tData.members.join(', ') : '명단 없음';
     
-    // 🔥 실제 접속 여부를 판별합니다!
     const isJoined = tData && tData.online === true;
     if(isJoined) joinedCount++;
 
@@ -1251,6 +1266,7 @@ function updateLobbyStatus(teamsObj) {
   document.getElementById('joinedCount').innerText = joinedCount;
 }
 
+// 🔥 [신규 추가] 주가 변동률(%) 화면 표시 로직 - 학생용 스마트폰
 function renderStudentTradeUI() {
   const area = document.getElementById('tradeArea');
   const pureKey = state.teamName.replace('팀','');
@@ -1262,6 +1278,20 @@ function renderStudentTradeUI() {
 
   area.innerHTML = state.stocks.map((s, idx) => {
     const currentQty = (myData.inventory ? myData.inventory[idx] : 0) || 0;
+    
+    let changeHtml = '';
+    if(s.prevPrice && s.prevPrice > 0) {
+      let diff = s.price - s.prevPrice;
+      let pct = ((diff / s.prevPrice) * 100).toFixed(1);
+      if(diff > 0) {
+         changeHtml = `<span class="text-red-400 text-[10px] ml-1 font-bold">▲ +${pct}%</span>`;
+      } else if(diff < 0) {
+         changeHtml = `<span class="text-blue-400 text-[10px] ml-1 font-bold">▼ ${pct}%</span>`;
+      } else {
+         changeHtml = `<span class="text-slate-400 text-[10px] ml-1 font-bold">- 0.0%</span>`;
+      }
+    }
+
     return `
       <div class="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-2">
         <div class="flex items-center justify-between">
@@ -1270,8 +1300,11 @@ function renderStudentTradeUI() {
             <span class="text-xs font-black text-slate-200 ml-1">${s.name}</span>
           </div>
           <div class="text-right">
-            <div class="text-xs font-black text-yellow-300">${Math.floor(s.price).toLocaleString()}원</div>
-            <div class="text-[9px] text-slate-400">보유량: <span class="text-emerald-400 font-bold">${currentQty}주</span></div>
+            <div class="text-xs font-black text-yellow-300 flex items-center justify-end">
+              ${Math.floor(s.price).toLocaleString()}원
+              ${changeHtml}
+            </div>
+            <div class="text-[9px] text-slate-400 mt-0.5">보유량: <span class="text-emerald-400 font-bold">${currentQty}주</span></div>
           </div>
         </div>
         
